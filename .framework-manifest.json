@@ -1,0 +1,161 @@
+{
+  "framework-version": "0.2.0",
+  "framework-repo": "Daniel-eldick/simplrr-framework",
+  "last-sync-commit": "",
+  "name": "simplrr-framework",
+  "description": "Stack-agnostic development operating system for Claude Code",
+  "classification": {
+    "core": {
+      "description": "Universal process files. Never modified by projects. Sync always accepts.",
+      "files": [
+        ".claude/rules/document-driven-dev.md",
+        ".claude/rules/git-workflow.md",
+        ".claude/rules/worktree-autorun.md",
+        ".claude/rules/autonomous-guardrails.md",
+        ".claude/rules/production-safety.md",
+        ".claude/rules/error-recovery.md",
+        ".claude/rules/ceo-cto-communication.md",
+        ".claude/skills/session-start/SKILL.md",
+        ".claude/skills/investigate/SKILL.md",
+        ".claude/skills/research/SKILL.md",
+        ".claude/skills/brainstorm/SKILL.md",
+        ".claude/skills/ux-design/SKILL.md",
+        ".claude/skills/plan/SKILL.md",
+        ".claude/skills/sign-off/SKILL.md",
+        ".claude/skills/worktree/SKILL.md",
+        ".claude/skills/code-review/SKILL.md",
+        ".claude/skills/qa/SKILL.md",
+        ".claude/skills/test/SKILL.md",
+        ".claude/skills/diagnose/SKILL.md",
+        ".claude/skills/deploy/SKILL.md",
+        ".claude/skills/review-pr/SKILL.md",
+        ".claude/skills/review-pr/references/preserved-checks.md",
+        ".claude/skills/release/SKILL.md",
+        ".claude/skills/sync-docs/SKILL.md",
+        ".claude/skills/organize/SKILL.md",
+        ".claude/skills/hygiene/SKILL.md",
+        ".claude/skills/wow-audit/SKILL.md",
+        ".claude/skills/coffee-break/SKILL.md",
+        ".claude/skills/self-optimize/SKILL.md",
+        ".claude/skills/self-optimize/lenses/_template.md",
+        ".claude/skills/self-optimize/lenses/eslint-warnings.md",
+        ".claude/skills/simplrr-framework/SKILL.md",
+        ".claude/skills/framework-sync/SKILL.md",
+        ".claude/skills/test/blast-radius-map.json",
+        ".claude/skills/test/cross-cutting-overrides.json",
+        ".claude/references/claude-cookbooks.md",
+        ".claude/landmines.md",
+        ".claude/coffee-notes.md"
+      ]
+    },
+    "adapter": {
+      "description": "Template files with [FILL] markers. Projects customize these. Sync requires contamination check.",
+      "files": [
+        "CLAUDE.md",
+        ".claude/rules/engineering-philosophy.md",
+        ".claude/rules/mcp-tools.md",
+        ".claude/rules/testing.md",
+        ".claude/hooks/block-dangerous.sh",
+        ".claude/hooks/protect-files.sh",
+        ".claude/hooks/quality-gate.sh",
+        ".claude/settings.local.json",
+        "docs/README.md",
+        "docs/active/README.md",
+        "docs/guides/ORIENTATION.md",
+        "docs/guides/WORKFLOWS.md",
+        "docs/guides/DECISION_TREES.md",
+        "docs/guides/INCIDENT_RESPONSE.md",
+        "docs/guides/SKILLS_MANUAL.md",
+        "docs/INCOMPLETE_FEATURES.md",
+        "docs/TECHNICAL_DEBT.md",
+        "docs/BACKLOG.md",
+        "docs/PRODUCTION_READINESS_ROADMAP.md",
+        "memory/MEMORY.md",
+        "memory/observations.md",
+        "memory/intuitions.md",
+        "memory/knowledge-map.md",
+        "README.md",
+        ".gitignore"
+      ]
+    },
+    "module": {
+      "description": "Optional add-on files. Activated by /simplrr-framework init or integrate. Not present in base install.",
+      "modules": {
+        "supabase": {
+          "description": "Supabase database integration (db-audit, scaling-check, database-safety rule)",
+          "files": [
+            ".claude/skills/_modules/supabase/db-audit/SKILL.md",
+            ".claude/skills/_modules/supabase/scaling-check/SKILL.md",
+            ".claude/skills/_modules/supabase/database-safety.md"
+          ],
+          "dependencies": []
+        },
+        "devtools": {
+          "description": "Chrome DevTools MCP integration (prod-audit)",
+          "files": [
+            ".claude/skills/_modules/devtools/prod-audit/SKILL.md"
+          ],
+          "dependencies": []
+        },
+        "legal": {
+          "description": "Legal compliance framework (legal-compliance skill + reference library)",
+          "files": [
+            ".claude/skills/_modules/legal/legal-compliance/SKILL.md",
+            ".claude/skills/_modules/legal/references/legal/INDEX.md",
+            ".claude/skills/_modules/legal/references/legal/GDPR.md",
+            ".claude/skills/_modules/legal/references/legal/UK-GDPR.md",
+            ".claude/skills/_modules/legal/references/legal/CCPA.md",
+            ".claude/skills/_modules/legal/references/legal/WCAG.md",
+            ".claude/skills/_modules/legal/references/legal/PCI-DSS.md",
+            ".claude/skills/_modules/legal/references/legal/MARKETING.md",
+            ".claude/skills/_modules/legal/references/legal/CONSUMER-PROTECTION.md",
+            ".claude/skills/_modules/legal/references/legal/FOOD-SAFETY.md"
+          ],
+          "dependencies": []
+        },
+        "content": {
+          "description": "Brand content generation (content skill)",
+          "files": [
+            ".claude/skills/_modules/content/content/SKILL.md"
+          ],
+          "dependencies": []
+        },
+        "perf": {
+          "description": "Frontend performance auditing (perf-audit skill + bundle-size lens)",
+          "files": [
+            ".claude/skills/_modules/perf/perf-audit/SKILL.md",
+            ".claude/skills/_modules/perf/lenses/bundle-size.md"
+          ],
+          "dependencies": []
+        }
+      }
+    }
+  },
+  "activated_modules": [],
+  "sync": {
+    "description": "Configuration for /framework-sync. Controls what can flow between project and template repo.",
+    "rejection-patterns": [
+      "<!-- FILL: Add your project-specific rejection patterns here. Examples below: -->",
+      "<!-- \\\\bmy-project-name\\\\b -->",
+      "<!-- \\\\bmy-domain-term\\\\b -->",
+      "<!-- staging\\\\.my-domain\\\\.com -->",
+      "<!-- my-api-key-pattern -->"
+    ],
+    "never-sync": [
+      "memory/*",
+      ".claude/settings.local.json",
+      "docs/active/*",
+      "docs/completed/*",
+      "docs/INCOMPLETE_FEATURES.md",
+      "docs/TECHNICAL_DEBT.md",
+      "docs/BACKLOG.md",
+      "docs/PRODUCTION_READINESS_ROADMAP.md"
+    ],
+    "always-sync": [
+      ".claude/rules/autonomous-guardrails.md",
+      ".claude/rules/document-driven-dev.md",
+      ".claude/rules/git-workflow.md",
+      ".claude/rules/worktree-autorun.md"
+    ]
+  }
+}

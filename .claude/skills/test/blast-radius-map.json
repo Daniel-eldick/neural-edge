@@ -1,0 +1,12 @@
+{
+  "description": "Maps src/ file prefixes to E2E spec directories. Longest prefix wins. Empty array = no E2E needed (unit tests only). Customize for your project.",
+  "routes": {
+    "src/components/ui/": [],
+    "src/utils/": [],
+    "src/data/": [],
+    "src/hooks/": ["e2e/01-smoke/"],
+    "src/contexts/": ["e2e/01-smoke/"],
+    "src/pages/": ["e2e/01-smoke/"],
+    "src/lib/": ["e2e/01-smoke/"]
+  }
+}

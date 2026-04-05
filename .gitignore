@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.npm
+
+# Build outputs
+dist/
+build/
+out/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test outputs
+playwright-report/
+test-results/
+coverage/
+.lighthouseci/
+
+# Debug artifacts
+debug-screenshots/
+
+# Claude Code
+# Track: .claude/rules/, .claude/skills/, .claude/hooks/, .claude/references/
+# Track: .claude/landmines.md, .claude/coffee-notes.md
+# Ignore: user-specific settings (projects create their own)
+# Note: .claude/settings.local.json is tracked as a TEMPLATE in this repo
+#        Projects should add it to their own .gitignore after customizing
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/

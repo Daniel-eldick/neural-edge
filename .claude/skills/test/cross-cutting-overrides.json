@@ -1,0 +1,15 @@
+{
+  "description": "Cross-cutting concern patterns. When a file matching a pattern changes, additional E2E specs are added to the blast radius. Customize for your project.",
+  "overrides": [
+    {
+      "pattern": "<!-- FILL: your auth context path, e.g. src/contexts/AuthContext -->",
+      "reason": "Auth changes affect all authenticated flows",
+      "additional_specs": ["e2e/01-smoke/", "e2e/02-auth/"]
+    },
+    {
+      "pattern": "<!-- FILL: your route guard path, e.g. src/components/ProtectedRoute -->",
+      "reason": "Route guards affect all protected pages",
+      "additional_specs": ["e2e/01-smoke/"]
+    }
+  ]
+}
