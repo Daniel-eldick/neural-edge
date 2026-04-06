@@ -1,10 +1,16 @@
 """Failing tests for src.sensory.on_chain — CryptoQuant funding rates + flows.
 
-These tests define the contract for Task 3 of Phase 2. They are expected
-to fail with ImportError until `src/sensory/on_chain.py` is implemented.
+These tests define the contract for Task 3 of Phase 2. The behaviour
+tests are marked ``xfail(strict=True, raises=NotImplementedError)``
+while the module is a skeleton — when Task 3 lands, xfail becomes
+XPASS and strict mode forces marker removal. Self-healing TDD red
+state that keeps the quality gate green.
 
 Plan mandate: on 429 rate-limit response → return empty list + log a
 warning. Verify the warning with `caplog`.
+
+The frozen-dataclass immutability test is NOT xfailed — the dataclass
+contract is already locked in the skeleton.
 """
 
 from __future__ import annotations
@@ -13,13 +19,24 @@ import logging
 
 import pytest
 import responses
-from src.sensory.on_chain import OnChainSignal, fetch_on_chain  # noqa: E402
+
+from src.sensory.on_chain import OnChainSignal, fetch_on_chain
 
 # CryptoQuant REST base — the real endpoint shape varies by plan,
 # so we treat the URL as opaque and mock whatever the module calls.
+# Task 3 must confirm the actual CryptoQuant URL pattern before shipping.
 CRYPTOQUANT_BASE = "https://api.cryptoquant.com/v1"
 
+# Marker applied to every behaviour test below. Removed (and the test
+# turned green) as Task 3 implements the real CryptoQuant integration.
+pending_impl = pytest.mark.xfail(
+    raises=NotImplementedError,
+    strict=True,
+    reason="Phase 2 Task 3: src.sensory.on_chain.fetch_on_chain not yet implemented",
+)
 
+
+@pending_impl
 @responses.activate
 def test_fetch_on_chain_returns_structured_signals_on_success() -> None:
     """Happy path: funding rate + exchange flow → OnChainSignal list."""
@@ -61,6 +78,7 @@ def test_fetch_on_chain_returns_structured_signals_on_success() -> None:
         assert isinstance(sig.metric, str) and sig.metric
 
 
+@pending_impl
 @responses.activate
 def test_fetch_on_chain_returns_empty_list_and_logs_warning_on_429(
     caplog: pytest.LogCaptureFixture,
@@ -69,6 +87,10 @@ def test_fetch_on_chain_returns_empty_list_and_logs_warning_on_429(
 
     This is the plan's exact test mandate for Task 3. The caplog check
     makes the "logs warning" assertion specific and measurable (CRITICAL-07).
+
+    Implementation note for Task 3: use ``logging.getLogger(__name__)`` so
+    the logger name matches ``"src.sensory.on_chain"`` — the caplog filter
+    below is scoped to that logger.
     """
     responses.add(
         responses.GET,
@@ -92,6 +114,7 @@ def test_fetch_on_chain_returns_empty_list_and_logs_warning_on_429(
     assert matched, f"Expected a rate-limit warning, got: {observed}"
 
 
+@pending_impl
 @responses.activate
 def test_fetch_on_chain_returns_empty_list_on_500_error() -> None:
     """Server error → empty list, no exception, no crash."""
@@ -107,6 +130,7 @@ def test_fetch_on_chain_returns_empty_list_on_500_error() -> None:
     assert signals == []
 
 
+@pending_impl
 @responses.activate
 def test_fetch_on_chain_returns_empty_list_on_malformed_payload() -> None:
     """Defensive parse: wrong JSON shape → empty list."""
