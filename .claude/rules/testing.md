@@ -1,73 +1,60 @@
 ---
 description: Testing guidelines and commands
 globs:
-  # FILL: Add glob patterns for your test files
-  - 'e2e/**'
-  - '**/*.test.*'
-  - '**/*.spec.*'
+  - 'tests/**'
+  - '**/*test*.py'
 ---
 
 # Testing Guide
 
 ## Test Commands
 
-<!-- FILL: Replace with your project's test commands -->
 ```bash
 # Unit Tests
-npm test                  # Watch mode
-npm run test:run          # Single run
-npm run test:coverage     # With coverage
-
-# E2E Tests
-npm run test:e2e          # Headless
-npm run test:e2e:ui       # UI mode
-npm run test:e2e:headed   # In browser
+pytest                    # Run all tests
+pytest -x --timeout=30    # Fail fast, 30s timeout
+pytest --cov              # With coverage
 
 # Full Suite (REQUIRED before commits)
-npm run test:all          # Lint + Unit + E2E
+ruff check . && mypy . && pytest -x --timeout=30
 ```
 
 ## Running Single Tests
 
-<!-- FILL: Replace with your project's single test commands -->
 ```bash
-# Unit test
-npm test -- path/to/test.test.ts
-npm test -- -t "should handle edge case"
+# Single file
+pytest tests/test_strategies/test_alpha_strategy.py
 
-# E2E test
-npm run test:e2e -- path/to/test.spec.ts
-npm run test:e2e -- --grep "specific test name"
+# Single test by name
+pytest -k "test_rsi_buy_signal"
+
+# Single directory
+pytest tests/test_sensory/
+
+# Verbose output
+pytest -v tests/test_signals/test_aggregator.py
 ```
-
-## Test ID Convention
-
-Use `data-testid` attributes for E2E selectors:
-
-- Format: `{component}-{element}-{modifier}`
-- Example: `user-submit-button`, `search-input-field`
 
 ## Test Types
 
-<!-- FILL: Update locations to match your project structure -->
-| Type   | Location          | Purpose                           |
-| ------ | ----------------- | --------------------------------- |
-| Unit   | `src/__tests__/`  | Component logic, hooks, utilities |
-| E2E    | `e2e/`            | User flows, integration           |
-| Manual | `docs/testbooks/` | QA verification                   |
+| Type        | Location                | Purpose                              |
+| ----------- | ----------------------- | ------------------------------------ |
+| Unit        | `tests/test_*/`         | Strategy logic, signals, risk, utils |
+| Integration | `tests/test_*/`         | Sensory API mocking, aggregator flow |
+| Manual      | Freqtrade CLI           | `freqtrade backtesting`, `test-strategy` |
 
 ## Coverage Tax
 
-When you touch a source file with < 60% coverage AND the change is logic (not CSS/copy/config), add at least one test for the code you touched. Coverage grows organically — like cleaning your station as you cook.
+When you touch a source file with < 60% coverage AND the change is logic (not config), add at least one test for the code you touched. Coverage grows organically — like cleaning your station as you cook.
 
 **Exempt from coverage tax**:
 
-- CSS/styling-only changes
-- Copy/text changes
-- Config, docs, skill files
+- Config/settings changes
+- Documentation, skill files
 - Files already at >= 60% coverage
+- `__init__.py` files
 
-**Check coverage**: `npm run test:coverage`
+**Check coverage**: `pytest --cov`
 
 ## Zero Tolerance Policy
 

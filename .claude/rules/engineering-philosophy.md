@@ -1,14 +1,11 @@
 ---
 description: Code quality standards and engineering philosophy
 globs:
-  # FILL: Add glob patterns for your source code files
-  # Examples: 'src/**/*.ts', 'src/**/*.tsx', 'app/**/*.py', 'lib/**/*.rb'
-  - 'src/**'
+  - 'src/**/*.py'
 ---
 
 # Engineering Philosophy - CRITICAL
 
-<!-- FILL: Replace with your team's quality mandate. Example: -->
 **User Mandate**: _"I want you to be pessimistic when it comes to the quality of the code. I need you to be demanding and perfectionist with the code. We need to take more time to build the perfect system that will never fail."_
 
 ## Code Quality Standards (Non-Negotiable)
@@ -19,21 +16,14 @@ globs:
 2. **Think Scale** - Every architectural decision must work at 10x current load
 3. **Challenge Everything** - Question patterns, assumptions, and "it works" solutions
 4. **Demand Proof** - Don't accept "should work" - verify with tests, benchmarks, or MCP queries
-   <!-- FILL: Add your project's verification tools. Examples: -->
-   <!-- - Database: `mcp__supabase__execute_sql` for actual row counts, query plans -->
-   <!-- - Security: `mcp__supabase__get_advisors({ type: "security" })` for audits -->
-   <!-- - Performance: Lighthouse, bundle analyzer, profiling tools -->
-   - **Example**: "This query is fast" → Prove it with `EXPLAIN ANALYZE`
-   - **Example**: "Security is solid" → Verify with automated audit tools
+   - **Strategy claims**: "This strategy is profitable" → Prove it with `freqtrade backtesting` (Sharpe ratio, max drawdown, win rate)
+   - **Signal claims**: "This API is reliable" → Verify with integration tests that mock failure modes (rate limits, timeouts, malformed responses)
+   - **Risk claims**: "Position sizing is safe" → Prove it with unit tests at boundary conditions (max drawdown, 0 balance, extreme conviction scores)
 5. **Flag Technical Debt** - Document scalability concerns immediately in TECHNICAL_DEBT.md
 
 ## User Experience Standards (Non-Negotiable)
 
-<!-- FILL: Replace with your domain's UX litmus test. Examples: -->
-<!-- Food service: "If a busy operator can't figure it out during a lunch rush, it's a bug." -->
-<!-- SaaS: "If a user can't complete the task in under 3 clicks, it's a bug." -->
-<!-- CLI: "If a developer needs to read the docs to use this command, it's a bug." -->
-_"If a busy user can't figure it out under pressure, it's a bug — not a training issue."_
+_"If the bot can't explain WHY it made a trade in one sentence, the signal logic is wrong."_
 
 Every user-facing feature must be designed from the user's perspective. Technical perfection that confuses the user is a failure. Run `/ux-design` before `/plan` for any feature with a user-facing component.
 
@@ -48,12 +38,11 @@ Every user-facing feature must be designed from the user's perspective. Technica
 
 ## Deep Dive Sessions - Schedule Proactively
 
-<!-- FILL: Replace with your project's critical audit areas. Examples: -->
-1. Database query performance audits (check for N+1 patterns)
-2. Concurrent load analysis (stress test with 50+ simultaneous operations)
-3. Storage lifecycle and memory management
-4. Real-time/streaming scalability
-5. Failure mode analysis (infrastructure down, network flaps, crashes)
+1. API rate limit compliance (CoinGecko 30/min, Alpaca 200/min — what happens at the limit?)
+2. Strategy backtest integrity (is the evaluator measuring what we think it's measuring?)
+3. Signal aggregator convergence (do correlated signals slip through the "uncorrelated" gate?)
+4. Autoresearch loop safety (can the optimizer game the evaluator indirectly?)
+5. Failure mode analysis (exchange API down, news feed stale, all signals disagreeing)
 
 ## If You See Red Flags
 

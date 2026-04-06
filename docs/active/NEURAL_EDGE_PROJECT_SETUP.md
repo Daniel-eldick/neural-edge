@@ -1,6 +1,6 @@
 # NeuralEdge — Project Setup & Weekend 1
 
-**Status**: 📋 PLANNING (0%) | **Tier**: 🟡 Standard | **Risk**: Low (greenfield, paper-only)
+**Status**: 🔧 DEVELOPMENT (42%) | **Tier**: 🟡 Standard | **Risk**: Low (greenfield, paper-only)
 **Created**: 2026-04-05
 
 ## 1. What & Why
@@ -60,9 +60,9 @@
 ```
 ~/Projects/neural-edge/
 ├── .claude/                          # simplrr-framework dev OS
-│   ├── rules/                        # 10 rules (7 core + 3 adapter, adapted for Python)
+│   ├── rules/                        # 10 core framework rules (+ 2 trading-specific rules created in Phase 4)
 │   ├── skills/                       # 23 core skills (no modules activated)
-│   ├── hooks/                        # Git safety + quality gate
+│   ├── hooks/                        # Git safety + quality gate (TEMPLATE — needs Python adaptation)
 │   ├── references/
 │   ├── settings.local.json           # MCP config (no Supabase/DevTools)
 │   ├── landmines.md
@@ -119,6 +119,7 @@
 │   └── notebooks/
 ├── tests/                            # pytest suite
 │   ├── conftest.py
+│   ├── test_core/
 │   ├── test_strategies/
 │   ├── test_sensory/
 │   ├── test_signals/
@@ -165,22 +166,25 @@
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | Create `~/Projects/` directory | [ ] |
-| 2 | Fork simplrr-framework template repo → `neural-edge` on GitHub | [ ] |
-| 3 | Clone to `~/Projects/neural-edge/` | [ ] |
-| 4 | Fill all CLAUDE.md markers for Python + Freqtrade + trading context | [ ] |
-| 5 | Fill all adapter file markers (rules, hooks, settings, docs) | [ ] |
-| 6 | Create `.gitignore` adapted for Python (`.venv/`, `__pycache__/`, `.env`, `user_data/data/`, `results.tsv`) | [ ] |
-| 7 | Create `pyproject.toml` with dependencies (freqtrade, pytest, ruff, mypy, pycoingecko, requests) | [ ] |
-| 8 | Create Python project structure (`src/` with all `__init__.py` files, `tests/conftest.py`) | [ ] |
-| 9 | Install `ta-lib` C library (`brew install ta-lib`) — required by Freqtrade before pip install | [ ] |
-| 10 | Set up virtual environment + install dependencies (`python -m venv .venv && pip install -e ".[dev]"`) | [ ] |
-| 11 | Create Freqtrade config (`config.json` with `dry_run: true`, Binance paper trading) | [ ] |
-| 12 | Create `.env.example` with all expected API key placeholders (Alpaca, CryptoQuant, CoinGecko, OpenAI) | [ ] |
-| 13 | Create `README.md` — project overview, setup instructions, architecture diagram | [ ] |
-| 14 | Initialize git, first commit, push to GitHub | [ ] |
-| 15 | Create `develop` branch, set as default | [ ] |
-| 16 | Verify: `ruff check .` passes, `mypy .` passes, framework markers are filled | [ ] |
+| 1 | Create `~/Projects/` directory | [x] |
+| 2 | Fork simplrr-framework template repo → `neural-edge` on GitHub | [x] |
+| 3 | Clone to `~/Projects/neural-edge/` | [x] |
+| 4 | Fill all CLAUDE.md markers for Python + Freqtrade + trading context | [x] |
+| 5a | Adapt `quality-gate.sh`: replace `npx tsc --noEmit` with `ruff check . && mypy . && pytest -x --timeout=30` | [x] |
+| 5b | Adapt `protect-files.sh`: replace `package-lock.json` block with `src/autoresearch/prepare.py` block | [x] |
+| 5c | Adapt `block-dangerous.sh`: remove FILL comment (functional logic already correct) | [x] |
+| 5d | Fill remaining adapter file markers (rules, settings, docs) | [x] |
+| 6 | Create `.gitignore` adapted for Python (`.venv/`, `__pycache__/`, `.env`, `user_data/data/`, `results.tsv`) | [x] |
+| 7 | Create `pyproject.toml` with dependencies (freqtrade, pytest, ruff, mypy, pycoingecko, requests) | [x] |
+| 8 | Create Python project structure (`src/` with all `__init__.py` files, `tests/conftest.py`) | [x] |
+| 9 | Install `ta-lib` C library (compiled from source to `~/.local`) — required by Freqtrade | [x] |
+| 10 | Set up virtual environment + install dependencies (`uv venv --python 3.12` + `uv pip install -e ".[dev]"`) | [x] |
+| 11 | Create Freqtrade config (`config.json` with `dry_run: true`, Binance paper trading) | [x] |
+| 12 | Create `.env.example` with all expected API key placeholders (Alpaca, CryptoQuant, CoinGecko, OpenAI) | [x] |
+| 13 | Create `README.md` — project overview, setup instructions, architecture diagram | [x] |
+| 14 | Initialize git, first commit, push to GitHub | [x] |
+| 15 | Create `develop` branch, set as default | [x] |
+| 16 | Verify: `ruff check .` passes, `mypy .` passes, framework markers are filled | [x] |
 
 ### Phase 1: Layer 1 — Freqtrade + Classic Strategy (Saturday AM)
 
@@ -228,7 +232,7 @@
 | 7 | Seed `docs/BACKLOG.md` — FinGPT fine-tuning, knowledge graph, Polymarket integration | N/A |
 | 8 | Final verification: `ruff check . && mypy . && pytest` all pass | Automated |
 
-**Scope guard**: 42 tasks across 5 phases. Stop if > 63.
+**Scope guard**: 45 tasks across 5 phases. Stop if > 67.
 
 ## 4. Files & Blast Radius
 
@@ -310,3 +314,4 @@ This is a greenfield project — no existing files affected. All files are CREAT
 | Date | Update | % |
 |------|--------|---|
 | 2026-04-05 | Created plan | 0% |
+| 2026-04-05 | Phase 0 complete — all 19 bootstrap tasks done. uv + Python 3.12 + ta-lib (compiled from source). Quality gate green. | 42% |

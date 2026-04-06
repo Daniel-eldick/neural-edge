@@ -16,7 +16,6 @@ if [ -z "$command" ]; then
   exit 0
 fi
 
-# FILL: Replace 'main' with your production branch name if different
 # Block patterns
 if echo "$command" | grep -qE 'git\s+push\s+(origin\s+)?main(\s|$)'; then
   # Allow /release skill to promote develop → main (CEO-approved)

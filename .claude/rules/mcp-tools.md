@@ -7,32 +7,11 @@ alwaysApply: false
 
 **User Mandate**: _"Use of agents, MCPs, and frequent commits to GitHub are always encouraged"_
 
-**Key Principle**: Prefer MCP tools over bash commands for database and browser operations.
+**Key Principle**: Use Task agents for complex multi-step work. No database or browser MCPs currently configured — this is a Python trading bot with CLI-based development.
 
 ## Available Tools
 
-<!-- FILL: List your project's MCP tools. Examples below. -->
-<!-- Remove sections that don't apply. Add sections for your MCPs. -->
-
-### 1. Database MCP
-
-<!-- FILL: Replace with your database MCP commands -->
-Database queries, migrations, security audits:
-
-- `mcp__database__execute_sql` - Query data, verify security, check indexes
-- `mcp__database__apply_migration` - Schema changes (DDL)
-- `mcp__database__get_advisors` - Security/performance audits
-- `mcp__database__list_tables` - Schema exploration
-
-### 2. Chrome DevTools MCP
-
-Browser testing, manual verification:
-
-- `take_snapshot`, `navigate_page`, `click`, `fill`, `emulate`
-- Use for manual testing verification
-- Playwright for automated regression tests only
-
-### 3. Task Agents
+### 1. Task Agents
 
 Complex multi-step work:
 
@@ -40,7 +19,7 @@ Complex multi-step work:
 - **Plan Agent** - Feature breakdown, implementation roadmaps
 - Use proactively for 3+ step tasks
 
-### 4. TodoWrite
+### 2. TodoWrite
 
 Progress tracking for complex tasks (3+ steps):
 
@@ -50,10 +29,9 @@ Progress tracking for complex tasks (3+ steps):
 
 ## When to Use
 
-<!-- FILL: Update the table with your actual MCP tool names -->
 | Operation       | Use This                | Not This    |
 | --------------- | ----------------------- | ----------- |
-| Database query  | Database MCP            | bash psql   |
-| Manual testing  | Chrome DevTools MCP     | Playwright  |
 | Complex search  | Task Explore agent      | Simple grep |
 | Multi-step work | TodoWrite + Task agents | Ad-hoc      |
+| API testing     | pytest with mocks       | Manual curl |
+| Strategy testing| Freqtrade CLI           | Raw Python  |

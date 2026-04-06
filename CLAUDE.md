@@ -2,10 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-<!-- FILL: Replace with your project's one-liner -->
-**Project**: <!-- FILL: e.g., "Multi-tenant SaaS platform (React + TypeScript + Supabase)" -->
-**Production**: <!-- FILL: e.g., "https://your-app.example.com (auto-deploys from `main`)" -->
-**Staging**: <!-- FILL: e.g., "https://staging.your-app.example.com (auto-deploys from `develop`)" -->
+**Project**: NeuralEdge — Multi-layer AI trading bot (Python 3.11+ + Freqtrade + autoresearch optimization)
+**Production**: Not deployed — paper trading only (`dry_run: true` is non-negotiable until explicit CEO approval)
+**Staging**: N/A (local development + Docker)
 
 **Branching**: `develop` = home base (the kitchen). `main` = production-only (the pass). Features branch from `develop`, PRs target `develop`. Only `/release` promotes develop → main.
 
@@ -19,7 +18,6 @@ These mandates are always-on. Detailed implementation guidance auto-loads from `
 
 ### 1. Engineering Philosophy → `engineering-philosophy.md`
 
-<!-- FILL: Replace with your team's engineering mandate. Example: -->
 _"I want you to be pessimistic when it comes to the quality of the code. I need you to be demanding and perfectionist with the code. We need to take more time to build the perfect system that will never fail."_
 
 ### 2. Document-Driven Development → `document-driven-dev.md`
@@ -30,8 +28,9 @@ _"Document the plan to fix, the plan to test, and once approved we move to devel
 
 ### 3. Production Safety → `production-safety.md`
 
-<!-- FILL: Replace with your deployment context. Example: -->
 _"Never push to main without my confirmation... pushing affects users in production."_
+
+**Paper-only mandate**: `dry_run: true` in Freqtrade config. No real money trades without explicit CEO authorization. The `paper-only-mandate.md` rule flags any config with `dry_run: false`.
 
 **Standard flow**: feature branch → PR → CI + preview → merge to `develop` → test on staging → `/release` to `main`
 **Tiered merge to develop**: Low risk = auto-merge if CI + preview clean. Medium = CEO approval. High = trigger phrase.
@@ -43,14 +42,11 @@ _"Use of agents, MCPs, and frequent commits to GitHub are always encouraged"_
 
 ### 5. Performance Awareness
 
-<!-- FILL: Replace with your performance context. Example: -->
-<!-- "Users are on 1-5 Mbps. Critical path budget: < 300KB gzipped." -->
-<!-- "Enterprise users expect sub-200ms API responses." -->
-_"Every new dependency must justify its cost. Always lazy-load non-critical SDKs."_
+_"Every new dependency must justify its cost. Respect API rate limits: CoinGecko 30 req/min, Alpaca 200 req/min. Batch API calls by design — no N+1 patterns against external services."_
 
 ### 6. Fail Loudly
 
-No silent degradation. No swallowed errors. No mock data in production paths. If the backend is unreachable, crash explicitly — don't serve stale data without telling the user.
+No silent degradation. No swallowed errors. No mock data in production paths. If an API is unreachable, crash explicitly or return an empty signal with a logged warning — don't serve stale data without telling the user.
 
 ### 7. Mandatory Pushback
 
@@ -58,8 +54,7 @@ Challenge requests that risk data integrity, security, or correctness. "Delayed 
 
 ### 8. UX-First Design
 
-<!-- FILL: Replace with your UX litmus test. Example: -->
-_"If a busy user can't figure it out under pressure, it's a bug — not a training issue."_
+_"If the bot can't explain WHY it made a trade in one sentence, the signal logic is wrong."_
 
 Run `/ux-design` before `/plan` for user-facing features. 8 principles: Visibility, Forgiveness, Minimalism, Consistency, Context-awareness, Error recovery, Speed of use, Learnability.
 
@@ -89,63 +84,125 @@ _"You handle the noise, I handle the signal. Give me CEO-level briefs — I'll a
 
 **All decisions must reference these** — keep them synchronized:
 
-<!-- FILL: Adjust to your project's core docs. Default set: -->
 1. **[INCOMPLETE_FEATURES.md](docs/INCOMPLETE_FEATURES.md)** - Check FIRST at session start
 2. **[PRODUCTION_READINESS_ROADMAP.md](docs/PRODUCTION_READINESS_ROADMAP.md)** - Master plan
 3. **[TECHNICAL_DEBT.md](docs/TECHNICAL_DEBT.md)** - Scalability concerns
 4. **[BACKLOG.md](docs/BACKLOG.md)** - Future work
-<!-- FILL: Add your 5th core doc if applicable (e.g., OFFLINE_SYSTEM_STATUS, API_STATUS, etc.) -->
 
 ---
 
 ## Quick Start
 
-<!-- FILL: Replace with your project's commands -->
 ```bash
-# FILL: Your install + dev command
-npm install && npm run dev  # http://localhost:5173
+# Prerequisites (macOS)
+brew install ta-lib                    # C library required by Freqtrade
 
-# FILL: Your quality check command (must match quality-gate.sh hook)
-npm run quality:check       # Format + lint + type-check + tests (REQUIRED before commits)
+# Setup
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+
+# Quality gate (REQUIRED before commits — must match quality-gate.sh hook)
+ruff check . && mypy . && pytest -x --timeout=30
 ```
 
 ## Common Commands
 
-<!-- FILL: Replace entirely with your project's command reference -->
 ```bash
 # Development
-# FILL: dev, build, preview commands
+freqtrade trade --dry-run --config config.json           # Paper trading
+freqtrade test-strategy --strategy AlphaStrategy         # Validate strategy loads
+freqtrade backtesting --strategy AlphaStrategy           # Run backtest
 
 # Testing
-# FILL: test commands (unit, e2e, full suite)
+pytest                                # Run all tests
+pytest -x --timeout=30               # Fail fast, 30s timeout
+pytest --cov                         # With coverage report
+pytest tests/test_strategies/        # Single directory
+pytest tests/test_sensory/test_news.py -k "test_api_error"  # Single test by name
 
 # Code Quality
-# FILL: lint, type-check, format commands
+ruff check .                         # Lint
+ruff format .                        # Auto-format
+mypy .                               # Type checking
 
-# Database (if applicable)
-# FILL: type generation, migration commands
+# Docker
+docker compose up                    # Freqtrade in paper mode (future: + MiroFish sidecar)
 ```
 
 ## Architecture Overview
 
-<!-- FILL: Replace this entire section with your project's architecture -->
-<!-- Include: -->
-<!-- - Provider/module hierarchy (if applicable) -->
-<!-- - Data flow diagram (the core mental model) -->
-<!-- - State management patterns -->
-<!-- - Code splitting strategy -->
-<!-- - Route structure -->
+### The 5-Layer Cake
 
 ```
-<!-- FILL: Your core data flow diagram -->
+┌─────────────────────────────────────────────────────────┐
+│  Layer 5: AUTORESEARCH LOOP                             │
+│  Autonomous strategy optimization (Karpathy pattern)    │
+│  Immutable evaluator: Sharpe ratio on paper P&L         │
+├─────────────────────────────────────────────────────────┤
+│  Layer 4: MIROFISH SWARM (Weekend 2+ — stub only)       │
+│  Multi-agent prediction via Docker sidecar              │
+├─────────────────────────────────────────────────────────┤
+│  Layer 3: KNOWLEDGE GRAPH (Future — stub only)          │
+│  FinDKG/Graphiti for entity-relationship modeling       │
+├─────────────────────────────────────────────────────────┤
+│  Layer 2: SENSORY SYSTEM                                │
+│  News (Alpaca), on-chain (CryptoQuant), sentiment,      │
+│  macro signals. Signal aggregator (min 3 gate).         │
+├─────────────────────────────────────────────────────────┤
+│  Layer 1: FREQTRADE + COINGECKO                         │
+│  Execution engine, TA (RSI + EMA + volume), risk mgmt,  │
+│  paper trading, backtesting, 20+ exchanges via CCXT     │
+└─────────────────────────────────────────────────────────┘
 ```
+
+### Data Flow
+
+```
+Market Data (CoinGecko) ──→ Freqtrade (candles, TA indicators)
+                                │
+Sensory System ─────────────────┤
+├── News (Alpaca API)           │
+├── On-chain (CryptoQuant)      ├──→ Signal Aggregator (min 3 gate)
+├── Sentiment (keyword-based)   │         │
+└── Macro (funding rates)       │         ▼
+                                │    Position Sizer (1x/3x/10x, max 1% risk)
+                                │         │
+                                │         ▼
+                                └──→ AlphaStrategy.populate_entry/exit_trend()
+                                          │
+                                          ▼
+                                     Freqtrade Execution (dry_run: true)
+                                          │
+                                          ▼
+                                     Autoresearch Loop
+                                     (backtest → evaluate → tweak → repeat)
+```
+
+### Integration Strategy
+
+| Upstream | Method | Extension Point |
+|----------|--------|----------------|
+| Freqtrade | pip dependency (not fork) | `IStrategy` subclass in `src/strategies/` |
+| CoinGecko | REST API via `pycoingecko` | Market data feed |
+| Alpaca News | REST API | `src/sensory/news.py` |
+| CryptoQuant | REST API | `src/sensory/on_chain.py` |
+| Autoresearch | Reimplemented pattern (10 files) | Locked evaluator + agent-editable strategy |
+| MiroFish | Docker sidecar REST API (stub) | `src/adapters/swarm.py` |
+| FinDKG | Future stub | `src/adapters/knowledge_graph.py` |
 
 ## Key Files
 
-<!-- FILL: Replace with your project's key files -->
-<!-- Example: -->
-<!-- - [src/App.tsx](src/App.tsx) - Entry point -->
-<!-- - [src/lib/api/](src/lib/api/) - API layer -->
+- [src/strategies/alpha_strategy.py](src/strategies/alpha_strategy.py) - Freqtrade IStrategy: RSI + EMA crossover + volume confirmation
+- [src/sensory/](src/sensory/) - Layer 2: news, on-chain, sentiment, macro signal providers
+- [src/signals/aggregator.py](src/signals/aggregator.py) - Convergence gate (min 3 uncorrelated signals to trade)
+- [src/signals/position_sizer.py](src/signals/position_sizer.py) - Conviction-weighted sizing (1x/3x/10x, max 1% risk)
+- [src/core/risk.py](src/core/risk.py) - PTJ rules: max 1% per trade, 10% drawdown circuit breaker
+- [src/autoresearch/prepare.py](src/autoresearch/prepare.py) - **LOCKED** evaluator (Sharpe ratio, drawdown, win rate) — protected by hook
+- [src/autoresearch/optimizer.py](src/autoresearch/optimizer.py) - The optimization loop: modify → backtest → evaluate → keep/discard
+- [src/autoresearch/program.md](src/autoresearch/program.md) - Agent constitution (what the optimizer can/cannot change)
+- [src/adapters/](src/adapters/) - Future layer stubs (MiroFish swarm, FinDKG knowledge graph)
+- [config.json](config.json) - Freqtrade config (`dry_run: true`, Binance paper trading)
+- [pyproject.toml](pyproject.toml) - Dependencies: freqtrade, pytest, ruff, mypy, pycoingecko, requests
 
 ## Important Conventions
 
@@ -154,34 +211,46 @@ npm run quality:check       # Format + lint + type-check + tests (REQUIRED befor
 - **Bug fixes and small tasks** (< 3 files): implement directly, no planning doc needed unless asked.
 - **Features and multi-file work**: always follow DDD — plan, document, approve, then execute.
 - Always run `git branch --show-current` before any git operation. Never assume which branch you're on.
-
-<!-- FILL: Add project-specific conventions -->
-<!-- Example: "Use `canceled` (single L) to match database enum values." -->
+- **Adapter pattern for future layers**: stubs define interfaces now so implementing later doesn't require restructuring.
+- **Config over code**: enable/disable signal sources via configuration. Disable = skip that signal, don't delete the module.
 
 ### Code Quality Tooling
 
-<!-- FILL: Replace with your project's tooling -->
-<!-- Example: -->
-<!-- - **Prettier** formats all code -->
-<!-- - **Husky + lint-staged** pre-commit hook -->
-<!-- - **GitHub Actions CI**: `npm run quality:check` on every push/PR -->
+- **ruff** — Linting and formatting (replaces flake8 + black + isort)
+- **mypy** — Static type checking (strict mode)
+- **pytest** — Test runner with 30s timeout
+- **Claude Code hooks** — `.claude/hooks/quality-gate.sh` runs `ruff check . && mypy . && pytest` before commits
+- **Protected files hook** — `.claude/hooks/protect-files.sh` blocks edits to `.env` and `src/autoresearch/prepare.py`
 
 ### Test Configuration
 
-<!-- FILL: Replace with your project's test config -->
-<!-- Example: -->
-<!-- - **Unit tests** (Vitest/Jest): environment, coverage thresholds -->
-<!-- - **E2E tests** (Playwright/Cypress): browser projects, timeout, workers -->
-<!-- - **Test IDs**: `data-testid="{component}-{element}-{modifier}"` -->
+- **Framework**: pytest
+- **Location**: `tests/` (mirrors `src/` structure: `test_strategies/`, `test_sensory/`, `test_signals/`, `test_autoresearch/`)
+- **Coverage tax**: Touch a source file with < 60% coverage AND the change is logic (not config)? Add at least one test.
+- **No E2E** — Python project, no browser. Integration tests serve this purpose.
+- **Zero tolerance**: All tests pass before commit. No skipped tests without documented reason.
+
+### Autoresearch Immutability
+
+`src/autoresearch/prepare.py` is the evaluator — the "judge" that scores strategy performance. It is **LOCKED**:
+- Protected by `protect-files.sh` hook (blocks Edit/Write)
+- The optimization loop can modify strategy parameters but **never** the evaluation criteria
+- This follows Karpathy's autoresearch pattern: immutable `prepare.py` ensures the optimizer can't game its own scoring
 
 ## Debugging
 
-<!-- FILL: Add project-specific debugging tips -->
-<!-- Example: -->
-<!-- ```bash -->
-<!-- # Browser console debug commands -->
-<!-- window.debug.getStatus() -->
-<!-- ``` -->
+```bash
+# Freqtrade diagnostics
+freqtrade test-strategy --strategy AlphaStrategy    # Verify strategy loads
+freqtrade backtesting --strategy AlphaStrategy      # Run historical backtest
+freqtrade show-config                               # Dump resolved config
+
+# Check API connectivity
+python -c "from pycoingecko import CoinGeckoAPI; print(CoinGeckoAPI().ping())"
+
+# Autoresearch experiment history
+cat src/autoresearch/results.tsv                    # TSV log of all optimization runs
+```
 
 ## Compaction Instructions
 
@@ -193,7 +262,8 @@ When context is compacted, always preserve:
 4. Test results from commands already run
 5. Never promote to main without explicit user confirmation (use `/release`)
 6. Main worktree lives on `develop` branch — `main` is production-only
-<!-- FILL: Add project-specific items to preserve across compaction -->
+7. Paper-only mandate: `dry_run: true` — no real trading without CEO approval
+8. `src/autoresearch/prepare.py` is LOCKED — never edit the evaluator
 
 ## Documentation
 
@@ -209,17 +279,16 @@ When context is compacted, always preserve:
 
 | Rule                   | Triggers                  | Details                                          |
 | ---------------------- | ------------------------- | ------------------------------------------------ |
-| engineering-philosophy | `src/**/*.ts(x)`          | Deep dive protocols, code review questions       |
+| engineering-philosophy | `src/**/*.py`             | Deep dive protocols, code review questions       |
 | document-driven-dev    | `docs/**`                 | DDD workflow, completion triggers, archival      |
 | production-safety      | deployment commands       | Risk assessment, PR merge protocol               |
 | git-workflow           | git commands              | Conventional commits, pre-commit checklist       |
-| testing                | `e2e/**`, `*.test.ts`     | Test commands, testid conventions                |
+| testing                | `tests/**`, `*.test.py`   | Test commands, coverage tax                      |
 | mcp-tools              | MCP tool usage            | Tool selection, agent usage                      |
 | ceo-cto-communication  | all communication         | CEO signal format, analogies, brief style        |
 | autonomous-guardrails  | quality gate execution    | Anti-gaming rules for self-correction loops      |
 | error-recovery         | tool/MCP failures         | Retry patterns, fallback table, escalation tiers |
 | worktree-autorun       | WORKTREE.md present       | Auto-detect and execute worktree manifests       |
-<!-- FILL: Add module-specific rules if activated (e.g., database-safety, admin-styling) -->
 
 ## Skills (Optional Workflow Tools)
 
@@ -278,7 +347,6 @@ FEATURE WORKTREE (hands — builds, tests, pushes)
 | `/wow-audit`        | Main    | Ways of Working process review                                           |
 | `/coffee-break`     | Main    | Review observations + graduate to intuitions/memory/backlog              |
 | `/self-optimize`    | Any     | **EXPERIMENTAL**: Autonomous optimization loop (autoresearch pattern)    |
-<!-- FILL: Add module skills if activated (e.g., /db-audit, /prod-audit, /legal-compliance, /content, /perf-audit, /scaling-check) -->
 
 **Pipeline**: `/session-start` → `/investigate` → `/research` → `/brainstorm` → `/ux-design` → `/plan` → `/sign-off` → `/worktree create` → implement → `/code-review` → `/qa` → commit → push → PR → `/review-pr` → merge to develop → CEO tests staging → `/release` → production
 **Periodic**: `/sync-docs` (after major work), `/organize` + `/hygiene` (monthly), `/wow-audit` (quarterly)

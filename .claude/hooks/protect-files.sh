@@ -22,23 +22,16 @@ if echo "$file_path" | grep -qE '\.env(\.|$)' && ! echo "$file_path" | grep -qE 
   exit 2
 fi
 
-# Block package-lock.json (use npm install instead)
-if echo "$file_path" | grep -qE 'package-lock\.json$'; then
-  echo "BLOCKED: Cannot modify package-lock.json directly. Use npm install." >&2
-  exit 2
-fi
-
 # Block .git/ directory
 if echo "$file_path" | grep -qE '\.git/'; then
   echo "BLOCKED: Cannot modify files inside .git/ directory." >&2
   exit 2
 fi
 
-# FILL: Add project-specific protected file patterns below
-# Example: Block existing database migration files
-# if echo "$file_path" | grep -qE 'migrations/[0-9]'; then
-#   echo "BLOCKED: Cannot modify existing migration files. Use your migration tool." >&2
-#   exit 2
-# fi
+# Block autoresearch evaluator (immutable — Karpathy pattern)
+if echo "$file_path" | grep -qE 'src/autoresearch/prepare\.py$'; then
+  echo "BLOCKED: Cannot modify prepare.py — the evaluator is immutable. See autoresearch architecture." >&2
+  exit 2
+fi
 
 exit 0
