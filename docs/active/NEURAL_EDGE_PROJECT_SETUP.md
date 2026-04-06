@@ -42,7 +42,7 @@
 | Upstream | Integration Method | Why |
 |----------|-------------------|-----|
 | simplrr-framework | `/simplrr-framework init` → fill markers | Dev OS scaffolding, `/framework-sync pull` for updates |
-| Freqtrade | `pip install freqtrade` (requires `ta-lib` C library pre-installed via `brew install ta-lib`) | Standalone app used as dependency — strategies are Python classes in `user_data/strategies/`. Docker alternative available for portability. |
+| Freqtrade | `pip install freqtrade` (requires `ta-lib` C library — compiled from source to `~/.local`) | Standalone app used as dependency — strategies are Python classes in `src/strategies/`. Docker alternative available for portability. |
 | autoresearch | Reimplement pattern (not fork) | Only 10 files, it's a methodology not a library |
 | MiroFish | Docker sidecar (Weekend 2+) | Full-stack app, call REST API for predictions |
 | CoinGecko | REST API (via `pycoingecko`) | Market data, no fork needed |
@@ -50,7 +50,7 @@
 
 ### Key Design Decisions
 
-1. **Freqtrade as pip dependency** — not a fork. Requires `ta-lib` C library pre-installed (`brew install ta-lib` on macOS). Their `IStrategy` interface is the extension point. We write strategies, they handle exchange connectivity + risk + backtesting. Docker alternative (`docker-compose.yml`) provided for portability.
+1. **Freqtrade as pip dependency** — not a fork. Requires `ta-lib` C library (compiled from source to `~/.local` — Homebrew unavailable). Their `IStrategy` interface is the extension point. We write strategies, they handle exchange connectivity + risk + backtesting. Docker alternative (`docker-compose.yml`) provided for portability.
 2. **Autoresearch reimplemented** — the core pattern is: locked evaluator + agent-editable strategy + git-tracked experiments + fixed time budget. We build this natively.
 3. **Adapter pattern for future layers** — `src/adapters/swarm.py` and `src/adapters/knowledge_graph.py` are stubs with defined interfaces. When MiroFish/FinDKG time comes, we implement the interface without restructuring.
 4. **No real money** — `dry_run: true` in Freqtrade config. This is non-negotiable until explicit CEO approval.
@@ -62,7 +62,7 @@
 ├── .claude/                          # simplrr-framework dev OS
 │   ├── rules/                        # 10 core framework rules (+ 2 trading-specific rules created in Phase 4)
 │   ├── skills/                       # 23 core skills (no modules activated)
-│   ├── hooks/                        # Git safety + quality gate (TEMPLATE — needs Python adaptation)
+│   ├── hooks/                        # Git safety + quality gate (adapted for Python in Phase 0)
 │   ├── references/
 │   ├── settings.local.json           # MCP config (no Supabase/DevTools)
 │   ├── landmines.md
@@ -113,7 +113,7 @@
 │       ├── config.py                 # Configuration management
 │       └── risk.py                   # PTJ rules: max 1% risk, circuit breaker
 ├── user_data/                        # Freqtrade convention
-│   ├── strategies/                   # Symlinked or copies from src/strategies/
+│   ├── strategies/                   # Empty — config.json points strategy_path to src/strategies/ directly
 │   ├── data/                         # Historical candle data
 │   ├── backtest_results/
 │   └── notebooks/
@@ -262,10 +262,10 @@ This is a greenfield project — no existing files affected. All files are CREAT
 
 | What to verify | Type | Status |
 |---------------|------|--------|
-| AlphaStrategy generates buy signal on RSI < 30 + EMA crossover + volume spike | Unit | [ ] |
-| AlphaStrategy generates sell signal on RSI > 70 + EMA crossover down | Unit | [ ] |
-| Risk module caps position at 1% of portfolio | Unit | [ ] |
-| Risk module triggers circuit breaker at 10% drawdown | Unit | [ ] |
+| AlphaStrategy generates buy signal on RSI < 30 + EMA crossover + volume spike | Unit | [x] |
+| AlphaStrategy generates sell signal on RSI > 70 + EMA crossover down | Unit | [x] |
+| Risk module caps position at 1% of portfolio | Unit | [x] |
+| Risk module triggers circuit breaker at 10% drawdown | Unit | [x] |
 | Position sizer scales 1x/3x/10x based on signal count | Unit | [ ] |
 | Signal aggregator blocks trade on < 3 signals | Unit | [ ] |
 | Signal aggregator allows trade on >= 3 uncorrelated signals | Unit | [ ] |
@@ -277,10 +277,10 @@ This is a greenfield project — no existing files affected. All files are CREAT
 | Autoresearch evaluator produces consistent Sharpe on same data | Unit | [ ] |
 | Autoresearch loop keeps improving strategy, discards regressions | Integration | [ ] |
 | Autoresearch loop logs every experiment to results.tsv | Integration | [ ] |
-| `freqtrade test-strategy --strategy AlphaStrategy` passes | Manual | [ ] |
-| `freqtrade backtesting --strategy AlphaStrategy` completes | Manual | [ ] |
-| `ruff check . && mypy . && pytest` all pass (quality gate) | Automated | [ ] |
-| Zero FILL markers remain in CLAUDE.md and adapter files | Automated | [ ] |
+| `freqtrade list-strategies` shows AlphaStrategy with Status OK | Manual | [x] |
+| `freqtrade backtesting --strategy AlphaStrategy` completes | Manual | [x] |
+| `ruff check . && mypy . && pytest` all pass (quality gate) | Automated | [x] |
+| Zero FILL markers remain in CLAUDE.md and adapter files | Automated | [x] |
 | `protect-files.sh` hook blocks edits to `src/autoresearch/prepare.py` | Manual | [ ] |
 | `config.json` with `dry_run: false` is flagged by `paper-only-mandate.md` rule | Manual | [ ] |
 
