@@ -160,6 +160,59 @@
 1. **`paper-only-mandate.md`** — Block any config with `dry_run: false`. Only CEO can authorize real trading.
 2. **`api-key-safety.md`** — Never hardcode API keys. All keys in `.env`. Block commits containing key patterns.
 
+### Autoresearch Interface Contract (Phase 3)
+
+The autoresearch loop has two locked boundaries: the evaluator (`prepare.py`) and the editable parameter space. These are defined here so Phase 3 implementation has no ambiguity.
+
+**`src/autoresearch/prepare.py` — locked evaluator interface**
+
+```python
+from dataclasses import dataclass
+from src.strategies.alpha_strategy import AlphaStrategy
+
+@dataclass(frozen=True)
+class EvalMetrics:
+    sharpe_ratio: float        # primary score, higher = better
+    max_drawdown_pct: float    # secondary, lower = better
+    win_rate: float            # tertiary, higher = better
+    total_trades: int          # sanity check — reject runs with < 20 trades
+    total_return_pct: float    # absolute return
+    timestamp: str             # ISO-8601 of eval run
+
+def evaluate(strategy_cls: type[AlphaStrategy], config_path: str = "config.json") -> EvalMetrics:
+    """Run a backtest on the fixed evaluation window and return metrics.
+
+    The evaluation window, pair list, and timeframe are hardcoded constants
+    inside this file and MUST NOT be parameterized — that's the whole point
+    of the locked evaluator (optimizer can't game the scoring by picking
+    favorable windows).
+    """
+```
+
+**Locked constants inside `prepare.py`** (not editable by the optimizer):
+- `EVAL_START = "20240601"`, `EVAL_END = "20240831"` (Jun-Aug 2024 — same window as Phase 1 baseline)
+- `EVAL_PAIRS = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]`
+- `EVAL_TIMEFRAME = "1h"`
+- `MIN_TRADES_FOR_VALID_EVAL = 20`
+
+**Editable parameter space** (defined in `program.md`, enforced by `optimizer.py`):
+
+| Parameter | Type | Range | Rationale |
+|-----------|------|-------|-----------|
+| `rsi_period` | int | [7, 21] | Standard RSI lookback range |
+| `rsi_oversold` | int | [20, 35] | Entry threshold |
+| `rsi_overbought` | int | [65, 80] | Exit threshold |
+| `ema_fast` | int | [8, 21] | Fast EMA for crossover |
+| `ema_slow` | int | [21, 55] | Slow EMA (must be > ema_fast, enforced by optimizer) |
+| `volume_mult` | float | [1.0, 3.0] | Volume spike multiplier vs rolling average |
+
+**Out of scope for the optimizer** (hard-coded in `alpha_strategy.py`, cannot be mutated):
+- Position sizing rules (`src/core/risk.py` — PTJ 1% max, circuit breaker)
+- Stop-loss logic
+- The structure of the strategy (entry = state, exit = crossover — Phase 1 hardening decision)
+
+The optimizer mutates parameters in-place on a copy of the strategy class and runs `prepare.evaluate()` on the mutant. No file editing, no AST rewriting. This prevents the optimizer from ever touching `prepare.py` directly (defense in depth alongside the `protect-files.sh` hook).
+
 ## 3. Tasks
 
 ### Phase 0: Repo Bootstrap (no tests — scaffolding only)
@@ -198,26 +251,33 @@
 
 ### Phase 2: Layer 2 — Sensory System (Saturday PM)
 
+**Mocking convention**: All sensory unit tests use the [`responses`](https://github.com/getsentry/responses) library to mock `requests`-based HTTP calls. This is the default for any `requests` user and keeps mocking consistent across providers. Added to `pyproject.toml` dev dependencies in Task 0.
+
+**Scope note**: Also create `tests/test_sensory/__init__.py` and `tests/test_signals/__init__.py` in Task 0 for consistency with `test_strategies/` and `test_core/`.
+
 | # | Task | Test approach | Status |
 |---|------|--------------|--------|
-| 0 | Write failing tests for sensory modules | `tests/test_sensory/` — each module returns structured signals, handles API errors gracefully | [ ] |
-| 1 | Create `src/sensory/news.py` — Alpaca News API integration (crypto news, structured as signals) | Test: returns list of `NewsSignal` objects with sentiment score, passes on API error | [ ] |
-| 2 | Create `src/sensory/on_chain.py` — CryptoQuant/Glasschain funding rates + exchange flows | Test: returns `OnChainSignal` with direction + confidence, handles rate limits | [ ] |
-| 3 | Create `src/sensory/sentiment.py` — basic keyword sentiment scoring on news headlines (FinGPT fine-tuning deferred to BACKLOG) | Test: returns `SentimentSignal` with score [-1, 1], handles empty input | [ ] |
-| 4 | Create `src/sensory/macro.py` — stablecoin flows, funding rate aggregation | Test: returns `MacroSignal`, handles missing data | [ ] |
-| 5 | Create `src/signals/aggregator.py` — convergence gate (min 3 uncorrelated signals to trade) | Test: blocks trade on < 3 signals, allows on >= 3, weights by confidence | [ ] |
-| 6 | Create `src/signals/position_sizer.py` — conviction-weighted sizing (weak=1x, moderate=3x, strong=10x, max 1% risk) | Test: sizing respects max risk, scales with signal strength | [ ] |
-| 7 | Integrate sensory signals into AlphaStrategy — strategy queries sensory system before executing | Test: strategy consults signals aggregator, trades only when convergence gate passes | [ ] |
+| 0 | Write failing tests for sensory modules + add `responses` to dev dependencies | `tests/test_sensory/` — each module returns structured signals, handles API errors gracefully, all HTTP calls mocked via `responses` | [ ] |
+| 1 | Create `src/core/api_client.py` — shared HTTP wrapper with TTL cache (keyed by `(provider, endpoint, params)`) + per-provider rate-limit token bucket (CoinGecko 30/min, Alpaca 200/min, CryptoQuant per plan). All sensory modules MUST route through this client. | `tests/test_core/test_api_client.py` — cache hit returns without HTTP call (verified with `responses.assert_all_requests_are_fired=False`), rate limiter blocks 31st request in 60s window, TTL expiry forces refetch | [ ] |
+| 2 | Create `src/sensory/news.py` — Alpaca News API integration via `api_client` (crypto news, structured as signals) | Test: returns list of `NewsSignal` objects with sentiment score, returns empty list on API error (no crash), no direct `requests.get` calls | [ ] |
+| 3 | Create `src/sensory/on_chain.py` — CryptoQuant/Glasschain funding rates + exchange flows via `api_client` | Test: returns `OnChainSignal` with direction + confidence; on 429 rate-limit response, returns empty list and logs warning (verify with caplog) | [ ] |
+| 4 | Create `src/sensory/sentiment.py` — basic keyword sentiment scoring on news headlines (FinGPT fine-tuning deferred to BACKLOG) | Test: returns `SentimentSignal` with score in `[-1, 1]` range on non-empty headline list, returns `SentimentSignal(score=0.0)` on empty input | [ ] |
+| 5 | Create `src/sensory/macro.py` — stablecoin flows, funding rate aggregation via `api_client` | Test: returns `MacroSignal` on valid data, returns empty list when all underlying endpoints fail | [ ] |
+| 6 | Create `src/signals/aggregator.py` — convergence gate (min 3 uncorrelated signals to trade) | Test: blocks trade on < 3 signals, allows on >= 3, weights by confidence, dedupes correlated signals | [ ] |
+| 7 | Create `src/signals/position_sizer.py` — conviction-weighted sizing (weak=1x, moderate=3x, strong=10x, max 1% risk) | Test: sizing respects max risk, scales with signal strength | [ ] |
+| 8 | Integrate sensory signals into AlphaStrategy — aggregator called inside `populate_entry_trend` (NOT per tick — once per candle close, cached via `api_client`) | Integration test: strategy consults aggregator, trades only when convergence gate passes; end-to-end test with 4 mocked sensory responses → aggregator → strategy → expected entry/exit decision | [ ] |
 
 ### Phase 3: Layer 5 — Autoresearch Loop (Sunday)
 
+**See Solution Design § Autoresearch Interface Contract** for the locked `prepare.py` signature, the editable parameter space, and out-of-scope items. Phase 3 implements that contract — do not deviate from it.
+
 | # | Task | Test approach | Status |
 |---|------|--------------|--------|
-| 0 | Write failing tests for autoresearch loop | `tests/test_autoresearch/` — evaluator is immutable, loop tracks experiments, keeps improvements | [ ] |
-| 1 | Create `src/autoresearch/prepare.py` — LOCKED evaluator: runs backtest, computes Sharpe ratio + max drawdown + win rate | Test: evaluator produces consistent metrics on same data, file is marked read-only | [ ] |
-| 2 | Create `src/autoresearch/program.md` — agent constitution: rules, constraints, what can be changed | Manual verification: document reviewed by CEO | [ ] |
-| 3 | Create `src/autoresearch/optimizer.py` — the loop: read program.md → modify strategy params → backtest → evaluate → keep/discard → log to results.tsv → repeat | Test: loop executes one cycle, logs result, reverts on worse performance | [ ] |
-| 4 | Run overnight: let autoresearch optimize AlphaStrategy for 50+ iterations | Manual: review results.tsv for improvements, check git log for experiment branches | [ ] |
+| 0 | Write failing tests for autoresearch loop + `tests/test_autoresearch/__init__.py` | `tests/test_autoresearch/` — evaluator is immutable, loop tracks experiments, keeps improvements, optimizer cannot bypass evaluator | [ ] |
+| 1 | Create `src/autoresearch/prepare.py` — LOCKED evaluator per interface contract: `evaluate(strategy_cls, config_path) -> EvalMetrics`. Uses hardcoded `EVAL_START/END/PAIRS/TIMEFRAME`. Invokes Freqtrade backtesting programmatically (see: `freqtrade.optimize.backtesting.Backtesting`, not subprocess — subprocess is fallback if programmatic API is unstable). | Test: evaluator produces consistent metrics on identical strategy + data (byte-equal `EvalMetrics` across 2 runs); evaluator raises `ValueError` if `total_trades < MIN_TRADES_FOR_VALID_EVAL`; file is blocked from editing by `protect-files.sh` (manual verification) | [ ] |
+| 2 | Create `src/autoresearch/program.md` — agent constitution: enumerates the editable parameter space (copy from Solution Design table), hard constraints (`ema_slow > ema_fast`), and forbidden actions (no edits to `prepare.py`, `risk.py`, `alpha_strategy.py` structure) | Manual verification: document reviewed by CEO; matches the Solution Design table exactly | [ ] |
+| 3 | Create `src/autoresearch/optimizer.py` — the loop: parse `program.md` → sample a mutation from parameter space → clone `AlphaStrategy` → apply params to clone → call `prepare.evaluate(clone)` → compare `sharpe_ratio` vs current best → keep on improvement, discard on regression → append row to `results.tsv` → repeat. Uses in-memory mutation on a cloned class, never file edits. | Test: one cycle executes and logs a row to `results.tsv`; regression is discarded (best unchanged); monkey-patching `prepare.evaluate` raises / is detected (see Test Plan — optimizer tampering test); `ema_slow > ema_fast` constraint is enforced (invalid mutations rejected before backtest) | [ ] |
+| 4 | Run overnight: let autoresearch optimize AlphaStrategy for 50+ iterations | Manual: review `results.tsv` for improvements; sanity-check that the best params aren't wildly overfit (e.g., `rsi_oversold=34` with 19 trades → suspicious) | [ ] |
 
 ### Phase 4: Adapter Stubs + Polish (Sunday PM)
 
@@ -232,7 +292,7 @@
 | 7 | Seed `docs/BACKLOG.md` — FinGPT fine-tuning, knowledge graph, Polymarket integration | N/A |
 | 8 | Final verification: `ruff check . && mypy . && pytest` all pass | Automated |
 
-**Scope guard**: 45 tasks across 5 phases. Stop if > 67.
+**Scope guard**: 43 tasks across 5 phases (Phase 0: 16, Phase 1: 5, Phase 2: 9, Phase 3: 5, Phase 4: 8). Stop if > 65.
 
 ## 4. Files & Blast Radius
 
@@ -256,9 +316,11 @@ This is a greenfield project — no existing files affected. All files are CREAT
 
 ## 5. Test Plan
 
-**CRITICAL-07 rule**: Every test must have a specific, measurable assertion.
+**CRITICAL-07 rule**: Every test must have a specific, measurable assertion. "Handles gracefully" is not an assertion — specify the exact behavior (empty list? typed exception? logged warning?).
 
 **E2E specs**: None — this is a Python project, no browser E2E. Integration tests serve this purpose.
+
+**HTTP mocking**: All sensory unit tests use the `responses` library. No `unittest.mock.patch` on `requests` — too fragile.
 
 | What to verify | Type | Status |
 |---------------|------|--------|
@@ -266,17 +328,28 @@ This is a greenfield project — no existing files affected. All files are CREAT
 | AlphaStrategy generates sell signal on RSI > 70 + EMA crossover down | Unit | [x] |
 | Risk module caps position at 1% of portfolio | Unit | [x] |
 | Risk module triggers circuit breaker at 10% drawdown | Unit | [x] |
+| `api_client` TTL cache: 2nd identical request within TTL returns without HTTP call | Unit | [ ] |
+| `api_client` rate limiter: 31st CoinGecko request in 60s window blocks (raises or sleeps) | Unit | [ ] |
+| `api_client` TTL expiry forces refetch after window | Unit | [ ] |
 | Position sizer scales 1x/3x/10x based on signal count | Unit | [ ] |
+| Position sizer respects `MAX_RISK_PER_TRADE` hard cap even with override | Unit | [x] |
 | Signal aggregator blocks trade on < 3 signals | Unit | [ ] |
 | Signal aggregator allows trade on >= 3 uncorrelated signals | Unit | [ ] |
-| News module returns structured `NewsSignal` on API success | Unit | [ ] |
-| News module returns empty list on API error (no crash) | Unit | [ ] |
-| On-chain module handles rate limits gracefully | Unit | [ ] |
-| Sentiment module returns score in [-1, 1] range on valid input | Unit | [ ] |
-| Sentiment module returns neutral (0) on empty input | Unit | [ ] |
-| Autoresearch evaluator produces consistent Sharpe on same data | Unit | [ ] |
+| Signal aggregator dedupes correlated signals from same provider family | Unit | [ ] |
+| News module returns structured `NewsSignal` on API success (mocked via `responses`) | Unit | [ ] |
+| News module returns empty list on API error (500/timeout, no crash) | Unit | [ ] |
+| On-chain module returns empty list + logs warning on 429 rate-limit response (verify with `caplog`) | Unit | [ ] |
+| Sentiment module returns score in `[-1, 1]` range on valid input | Unit | [ ] |
+| Sentiment module returns `SentimentSignal(score=0.0)` on empty input | Unit | [ ] |
+| Macro module returns empty list when all underlying endpoints fail | Unit | [ ] |
+| **Integration**: Full pipeline with 4 mocked sensory responses → aggregator (≥3 converge) → AlphaStrategy → expected buy signal produced | Integration | [ ] |
+| **Integration**: Full pipeline with 2 mocked signals → aggregator blocks → no trade | Integration | [ ] |
+| Autoresearch evaluator produces byte-equal `EvalMetrics` on same strategy + data (determinism) | Unit | [ ] |
+| Autoresearch evaluator raises `ValueError` when `total_trades < MIN_TRADES_FOR_VALID_EVAL` | Unit | [ ] |
+| Autoresearch optimizer: monkey-patching `prepare.evaluate` in-process raises or is detected (tamper check) | Unit | [ ] |
+| Autoresearch optimizer enforces `ema_slow > ema_fast` constraint (invalid mutations rejected pre-backtest) | Unit | [ ] |
 | Autoresearch loop keeps improving strategy, discards regressions | Integration | [ ] |
-| Autoresearch loop logs every experiment to results.tsv | Integration | [ ] |
+| Autoresearch loop logs every experiment to `results.tsv` (one row per iteration) | Integration | [ ] |
 | `freqtrade list-strategies` shows AlphaStrategy with Status OK | Manual | [x] |
 | `freqtrade backtesting --strategy AlphaStrategy` completes | Manual | [x] |
 | `ruff check . && mypy . && pytest` all pass (quality gate) | Automated | [x] |
@@ -293,6 +366,8 @@ This is a greenfield project — no existing files affected. All files are CREAT
 - Paper trading only — no financial risk
 
 **Time to rollback**: 30 seconds (`rm -rf ~/Projects/neural-edge/`)
+
+**Phase 3 data side-effect note**: `src/autoresearch/results.tsv` accumulates one row per optimization iteration. If the parameter space or evaluation window in `prepare.py` changes after the optimizer has already been run, prior rows become invalid (different search surface / different scoring). In that case: `rm src/autoresearch/results.tsv` before re-running, and git-commit the wipe so experiment history is unambiguous. The file is in `.gitignore` by Phase 0 task 6, so accidental commits are already blocked.
 
 ---
 
@@ -314,6 +389,7 @@ This is a greenfield project — no existing files affected. All files are CREAT
 | Date | Update | % |
 |------|--------|---|
 | 2026-04-05 | Created plan | 0% |
-| 2026-04-05 | Phase 0 complete — all 19 bootstrap tasks done. uv + Python 3.12 + ta-lib (compiled from source). Quality gate green. | 42% |
+| 2026-04-05 | Phase 0 complete — all 16 bootstrap tasks done. uv + Python 3.12 + ta-lib (compiled from source). Quality gate green. | 42% |
 | 2026-04-06 | Phase 1 complete — AlphaStrategy (RSI+EMA+volume), risk.py (PTJ rules), 43 tests passing, first backtest run (1 trade, -0.14% on Jun-Aug 2024). Quality gate green. | 53% |
 | 2026-04-06 | Phase 1 hardening — `/code-review` → `/qa` pipeline. 3 MEDIUM findings fixed: (1) alpha_strategy docstrings now match code (entry = EMA *state*, exit = EMA *crossover* — asymmetry documented as intentional); (2) `CONVICTION_MULTIPLIERS` wrapped in `MappingProxyType` so runtime mutation raises `TypeError`; (3) `PositionSizer.calculate()` enforces a hard cap — override above `MAX_RISK_PER_TRADE` can no longer exceed `portfolio * 0.01 * max_multiplier` (defense in depth against the future optimizer). +2 tests (45 total). Quality gate green. | 53% |
+| 2026-04-06 | Sign-off round 1 (Standard, 7.0/10 GO WITH NOTES) → plan hardening for Phases 2-4: (1) added `api_client.py` shared HTTP wrapper with TTL cache + rate-limit token bucket as Phase 2 Task 1 (prevents N+1 against CoinGecko/Alpaca); (2) added Autoresearch Interface Contract to Solution Design — locked `prepare.py` signature, `EvalMetrics` dataclass, hardcoded eval window, explicit editable parameter space table; (3) sensory tests now mandate `responses` library; (4) added integration tests (full pipeline) + optimizer tamper test + constraint test to Test Plan; (5) Rollback notes `results.tsv` wipe policy; (6) reconciled task counts (43 total). Task count: 42 → 43 (+1 caching task). | 53% |
