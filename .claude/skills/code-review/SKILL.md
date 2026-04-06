@@ -1,7 +1,7 @@
 ---
 name: code-review
 description: Strict pre-commit quality gate — analyzes code, runs checks, produces evidence-based findings with verdict. Hard to pass by design.
-allowed-tools: Read, Grep, Glob, Bash, Task, mcp__database__get_advisors, mcp__database__execute_sql, mcp__chrome-devtools__take_snapshot
+allowed-tools: Read, Grep, Glob, Bash, Task
 ---
 
 # Code Review Skill
@@ -34,16 +34,16 @@ Classify into a review tier:
 
 | Tier         | Criteria                                               | Review Depth                  |
 | ------------ | ------------------------------------------------------ | ----------------------------- |
-| **Light**    | Docs, skills, config, CSS-only, copy changes           | Single-pass checklist         |
-| **Standard** | UI components, hooks, refactors, API integration       | Full analysis + auto checks   |
-| **Deep**     | DB migrations, RLS, auth, offline sync, service worker | Full + MCP + Devil's Advocate |
+| **Light**    | Docs, skills, config, copy changes                     | Single-pass checklist         |
+| **Standard** | Strategy logic, signal modules, API integration, risk  | Full analysis + auto checks   |
+| **Deep**     | Autoresearch evaluator, exchange config, real-money     | Full + MCP + Devil's Advocate |
 
 ### Light Tier — Single-Pass Checklist
 
 For Light tier, skip all subsequent steps. Run this checklist and produce verdict:
 
 - [ ] Changes match intent (no accidental modifications in the diff)
-- [ ] Formatting correct (markdown, YAML, JSON, etc.)
+- [ ] Formatting correct (markdown, YAML, JSON, Python, etc.)
 - [ ] No secrets or sensitive data (API keys, tokens, passwords)
 - [ ] No unrelated code changes hiding in the diff
 
@@ -60,32 +60,30 @@ Read `.claude/landmines.md`. Check each pattern against the diff:
 - Any landmine match → **auto-flag as HIGH** in findings with the specific pattern ID
 - Document which patterns were checked and which matched
 
-### MCP Verification (Deep tier)
+### Trading-Specific Checks (Standard + Deep)
 
-**IF database changes detected** (migrations, RPC, RLS):
-
-```
-mcp__database__get_advisors({ type: "security" })
-mcp__database__get_advisors({ type: "performance" })
-mcp__database__execute_sql("EXPLAIN ANALYZE ...")  // for new/modified queries
-```
-
-**IF frontend changes detected** (Standard + Deep):
+**IF strategy changes detected** (`src/strategies/`):
 
 ```
-mcp__chrome-devtools__take_snapshot()  // inspect current UI state
-Read component files — check patterns, types, hooks usage
+- Verify `dry_run: true` in config.json (paper-only mandate)
+- Check risk limits enforced (max 1% per trade, 10% drawdown circuit breaker)
+- Verify signal convergence gate is respected (min 3 uncorrelated signals)
 ```
 
-**IF offline changes detected** (Deep):
+**IF autoresearch changes detected** (`src/autoresearch/`):
 
 ```
-<!-- FILL: Add grep checks for your offline system's critical constants:
-- Batch size configuration — verify expected value
-- Data retention policy — verify cleanup intact
-- Sync status field — verify proper state checks
-- Reconnection delay — verify anti-stampede delay present
--->
+- Verify prepare.py is NOT modified (immutable evaluator)
+- Check optimizer respects program.md constitution
+- Verify results.tsv is append-only (no history deletion)
+```
+
+**IF sensory changes detected** (`src/sensory/`):
+
+```
+- Verify API rate limits respected (CoinGecko 30/min, Alpaca 200/min)
+- Check graceful degradation on API failure (empty signal, not crash)
+- Verify no hardcoded API keys (must come from .env)
 ```
 
 ---
@@ -153,52 +151,44 @@ If no planning doc exists → check the PR description or commit messages for bu
 
 ---
 
-## Step 4: Engineering Philosophy + Security + UX (Standard + Deep)
+## Step 4: Engineering Philosophy + Security (Standard + Deep)
 
 For **Standard and Deep** tiers (Deep: this is **Phase 2 — Quality Review**):
 
 ### Scale Analysis (10x Load)
 
-- [ ] What happens at 10x current load?
-- [ ] Any N+1 queries?
-- [ ] Memory leak potential over weeks?
-- [ ] Worst-case performance?
+- [ ] What happens at 10x current load (50 pairs instead of 5)?
+- [ ] Any N+1 API calls (calling exchange per-pair instead of batch)?
+- [ ] Memory leak potential over weeks of continuous trading?
+- [ ] Rate limit compliance at scale?
 
 ### Failure Analysis
 
-- [ ] What happens when this fails?
-- [ ] Error handling adequate?
-- [ ] Retry logic appropriate?
+- [ ] What happens when the exchange API is down?
+- [ ] What happens when a sensory API returns garbage?
+- [ ] Error handling adequate (graceful degradation, not crash)?
+- [ ] Circuit breaker triggers correctly?
 
 ### Security Check (Deep tier)
 
-- [ ] RLS policies adequate?
-- [ ] Input validation present?
-- [ ] No sensitive data exposure?
-- [ ] Auth checks in place?
+- [ ] No API keys hardcoded (must come from .env)
+- [ ] `dry_run: true` enforced in config
+- [ ] `prepare.py` evaluator untouched (immutability check)
+- [ ] No sensitive data in logs or results.tsv
 
-### Tenant Isolation Check (Standard + Deep)
+### Paper-Only Mandate (Standard + Deep)
 
-Whenever `.from(` query patterns appear in the diff:
+Whenever `config.json` or Freqtrade configuration is in the diff:
 
-- [ ] `tenant_id` filter present on every query?
-- [ ] React Query key includes `tenant_id`?
-- Any missing filter → **auto-flag as CRITICAL** (multi-tenant data leak risk)
+- [ ] `dry_run` is `true`
+- Any `dry_run: false` → **auto-flag as CRITICAL** (real-money risk without CEO authorization)
 
 ### Code Quality (Standard + Deep)
 
 - [ ] Follows existing codebase patterns?
 - [ ] Tests cover new functionality?
-- [ ] Admin components use <!-- FILL: your design token convention --> (not hardcoded colors)?
-
-### UX Verification (Standard + Deep, if UI changes detected)
-
-- [ ] Touch targets >= 44px (Apple HIG / WCAG 2.1 AAA)
-- [ ] Loading/skeleton states present (user knows what's happening)
-- [ ] Error messages include recovery action (not just "Something went wrong")
-- [ ] Destructive actions have confirmation dialog
-- [ ] Primary action visible without scrolling
-- [ ] Consistent interaction patterns with existing app flows
+- [ ] Type annotations present (mypy strict mode)?
+- [ ] Docstrings on public interfaces?
 
 ---
 
@@ -207,16 +197,16 @@ Whenever `.from(` query patterns appear in the diff:
 **A strict gate produces evidence, not opinions.** Actually run:
 
 ```bash
-npm run lint          # Zero warnings
-npm run type-check    # Zero errors
-npm run test:run      # No NEW failures beyond known pre-existing (11)
+ruff check .                    # Zero warnings
+mypy .                          # Zero errors
+pytest -x --timeout=30          # All tests pass
 ```
 
-| Check      | Pass Criteria                          | On Failure    |
-| ---------- | -------------------------------------- | ------------- |
-| Lint       | Zero warnings                          | Flag HIGH     |
-| Type-check | Zero errors                            | Flag CRITICAL |
-| Unit tests | No NEW failures beyond 11 pre-existing | Flag CRITICAL |
+| Check      | Pass Criteria     | On Failure    |
+| ---------- | ----------------- | ------------- |
+| Lint       | Zero warnings     | Flag HIGH     |
+| Type-check | Zero errors       | Flag CRITICAL |
+| Unit tests | All tests pass    | Flag CRITICAL |
 
 Record exact output for each command — these feed into the Evidence Gate (Step 7).
 
@@ -247,11 +237,11 @@ Find assumptions, edge cases, and failure modes the author likely missed. Be con
 2. Read the diff: [DIFF or git diff develop]
 3. Read CLAUDE.md for project conventions
 4. For each changed file, ask:
-   - What happens if this input is null/undefined/empty?
+   - What happens if this input is null/empty/malformed?
    - What happens at 10x concurrent usage?
    - Is there a race condition between this and other operations?
-   - Could this silently corrupt data?
-   - Is tenant isolation maintained (tenant_id on every query)?
+   - Could this silently corrupt trading data?
+   - Are API rate limits respected under all code paths?
 
 ## Output Format
 
@@ -283,17 +273,17 @@ Scan the review narrative for these phrases. If found, replace with evidence:
 | "should work"          | "I ran [command] and the output was [X]"                      |
 | "probably passes"      | "Test [name] passes with assertion [Y]"                       |
 | "looks correct"        | "I traced [rule] through [file:line] and verified [behavior]" |
-| "seems fine"           | "MCP query returned [Z]"                                      |
+| "seems fine"           | "[specific evidence]"                                         |
 | "I believe this works" | "[specific evidence]"                                         |
 
 ### Evidence Table (Deep tier — required)
 
-| Claim            | Evidence Command                     | Actual Output    |
-| ---------------- | ------------------------------------ | ---------------- |
-| "Tests pass"     | `npm run test:run`                   | "[exact output]" |
-| "No lint errors" | `npm run lint`                       | "[exact output]" |
-| "No type errors" | `npm run type-check`                 | "[exact output]" |
-| "RLS is secure"  | `get_advisors({ type: "security" })` | "[exact output]" |
+| Claim            | Evidence Command            | Actual Output    |
+| ---------------- | --------------------------- | ---------------- |
+| "Tests pass"     | `pytest -x --timeout=30`    | "[exact output]" |
+| "No lint errors" | `ruff check .`              | "[exact output]" |
+| "No type errors" | `mypy .`                    | "[exact output]" |
+| "Paper-only"     | `grep dry_run config.json`  | "[exact output]" |
 
 For Standard tier, the evidence table is recommended but not required — the automated check results from Step 5 serve as baseline evidence.
 
@@ -415,12 +405,6 @@ Source legend: Review = main review, [DA] = Devil's Advocate agent, Landmine = l
 | Type-check | PASS/FAIL | [summary]                       |
 | Unit tests | PASS/FAIL | [X passed, Y failed, Z skipped] |
 
-### MCP Verification Results (Deep tier only)
-
-- Security advisors: [X warnings found / Clean]
-- Performance advisors: [X warnings found / Clean]
-- Query performance: [EXPLAIN ANALYZE results if applicable]
-
 ### Strengths
 
 - [What's done well — good work deserves recognition]
@@ -434,7 +418,7 @@ Source legend: Review = main review, [DA] = Devil's Advocate agent, Landmine = l
 | APPROVED            | Zero CRITICAL/HIGH findings. Automated checks pass.                       |
 | APPROVED WITH NOTES | Zero CRITICAL. ≤2 HIGH (documented, non-blocking). Automated checks pass. |
 | NEEDS CHANGES       | Any CRITICAL finding, OR >2 HIGH findings, OR automated checks fail.      |
-| BLOCKED             | Tenant isolation breach, security vulnerability, or data corruption risk. |
+| BLOCKED             | Paper-only violation, security vulnerability, or evaluator tampering.     |
 
 Rationale: [Specific reason based on findings severity]
 
@@ -445,46 +429,49 @@ Rationale: [Specific reason based on findings severity]
 
 ## Anti-Patterns to Flag
 
-**Database**:
+**Trading Safety**:
 
-- Missing RLS policies on new tables
-- N+1 queries in RPC functions
-- Adding LIMIT to RPC functions (breaks tenant isolation)
-- SECURITY DEFINER without `SET search_path TO ''` or auth checks
+- `dry_run: false` without explicit CEO authorization
+- Modifying `prepare.py` (autoresearch evaluator is immutable)
+- Hardcoded API keys or exchange credentials
+- Missing circuit breaker on new trading logic
+- Position sizing exceeding 1% max risk per trade
 
-**Offline System**:
+**API Integration**:
 
-- Removing 30-day local database cleanup (storage bloat)
-- Removing stagger delay from handleOnline (sync stampede)
-- Missing sync_status checks before deletion
-- Disabling slow-retry phase (breaks self-healing)
-- Bypassing sync queue semaphore (connection pool exhaustion)
+- N+1 API calls (per-pair instead of batch)
+- Missing rate limit handling (CoinGecko 30/min, Alpaca 200/min)
+- No timeout on external API calls
+- Silent failure on API errors (must return empty signal, not crash)
+- Caching without TTL (stale market data is dangerous)
 
-**Security**:
+**Autoresearch**:
 
-- Storing PII in local database without encryption
-- Missing input validation on user-provided data
-- Skipping auth checks in API calls
-- Exposing sensitive data in client-side logs
+- Optimizer modifying its own evaluation criteria
+- Missing experiment logging to results.tsv
+- Deleting or overwriting experiment history
+- Unbounded optimization loop (must have fixed time/iteration budget)
 
 **Testing**:
 
-- Vague test assertions ("order syncs" → "sync_status changes to 'synced' within 5s")
-- Missing test coverage for new features
-- Console.log in production code (except allowed: debug-offline.ts, debug.ts, authSecurity.ts)
+- Vague test assertions ("strategy works" → "RSI < 30 with EMA crossover generates buy signal")
+- Missing test coverage for new behavior
+- Tests that pass regardless of implementation (testing mocks, not logic)
 
-**Admin UI**:
+**Security**:
 
-- Hardcoded colors in admin components (use <!-- FILL: your design token convention -->)
+- API keys in source code or config.json (must be in .env)
+- Sensitive data in logs or experiment results
+- Missing input validation on external API responses
 
 ---
 
 ## Principles
 
 1. **Strict by design** — This gate should be hard to pass. If everything always gets APPROVED, the bar is too low.
-2. **Evidence over opinion** — Every claim must be backed by a command output, MCP result, or code trace. No "looks good to me."
+2. **Evidence over opinion** — Every claim must be backed by a command output or code trace. No "looks good to me."
 3. **Risk-proportionate** — Light changes get a checklist. Deep changes get a Devil's Advocate agent. Don't hold a docs commit to Deep standards.
-4. **Verify, don't trust** — Use MCP tools to confirm claims. "RLS is fine" → prove it with `get_advisors`.
+4. **Verify, don't trust** — Run the quality gate commands. Check the config. Read the diff.
 5. **Flag the landmines** — Read `.claude/landmines.md` and cross-reference patterns against the diff. This is a step, not a suggestion.
 6. **Constructive, not adversarial** — Find real problems. Recognize strengths. Suggest improvements.
 7. **Existing patterns over new patterns** — If the codebase does X one way, new code should too.
