@@ -1,6 +1,6 @@
 # NeuralEdge — Project Setup & Weekend 1
 
-**Status**: 🔧 DEVELOPMENT (42%) | **Tier**: 🟡 Standard | **Risk**: Low (greenfield, paper-only)
+**Status**: 🔧 DEVELOPMENT (53%) | **Tier**: 🟡 Standard | **Risk**: Low (greenfield, paper-only)
 **Created**: 2026-04-05
 
 ## 1. What & Why
@@ -190,11 +190,11 @@
 
 | # | Task | Test approach | Status |
 |---|------|--------------|--------|
-| 0 | Write failing tests for Alpha Strategy behavior | `tests/test_strategies/test_alpha_strategy.py` — strategy loads, generates signals on sample data, respects risk limits | [ ] |
-| 1 | Create `src/strategies/alpha_strategy.py` — IStrategy class with RSI + EMA crossover + volume confirmation | Test from task 0 passes: strategy generates buy/sell signals | [ ] |
-| 2 | Create `src/core/risk.py` — max 1% per trade, drawdown circuit breaker (10%), conviction sizing (1x/3x/10x) | `tests/test_core/test_risk.py` — position sizes respect limits, circuit breaker triggers | [ ] |
-| 3 | Wire strategy to Freqtrade — `user_data/strategies/` symlink or copy, verify `freqtrade test-strategy` passes | Manual: `freqtrade backtesting --strategy AlphaStrategy` runs without error | [ ] |
-| 4 | Run first backtest — BTC/USDT last 30 days, record baseline Sharpe + max drawdown | Manual: baseline metrics recorded in `docs/active/` | [ ] |
+| 0 | Write failing tests for Alpha Strategy behavior | `tests/test_strategies/test_alpha_strategy.py` — strategy loads, generates signals on sample data, respects risk limits | [x] |
+| 1 | Create `src/strategies/alpha_strategy.py` — IStrategy class with RSI + EMA crossover + volume confirmation | Test from task 0 passes: strategy generates buy/sell signals | [x] |
+| 2 | Create `src/core/risk.py` — max 1% per trade, drawdown circuit breaker (10%), conviction sizing (1x/3x/10x) | `tests/test_core/test_risk.py` — position sizes respect limits, circuit breaker triggers | [x] |
+| 3 | Wire strategy to Freqtrade — `strategy_path: src/strategies` in config.json, `freqtrade list-strategies` shows OK | Manual: `freqtrade backtesting --strategy AlphaStrategy` runs without error | [x] |
+| 4 | Run first backtest — BTC/ETH/SOL Jun-Aug 2024, baseline: 1 trade, -0.14% (very conservative RSI<30 filter) | Backtest completed, results stored in `user_data/backtest_results/` | [x] |
 
 ### Phase 2: Layer 2 — Sensory System (Saturday PM)
 
@@ -315,3 +315,4 @@ This is a greenfield project — no existing files affected. All files are CREAT
 |------|--------|---|
 | 2026-04-05 | Created plan | 0% |
 | 2026-04-05 | Phase 0 complete — all 19 bootstrap tasks done. uv + Python 3.12 + ta-lib (compiled from source). Quality gate green. | 42% |
+| 2026-04-06 | Phase 1 complete — AlphaStrategy (RSI+EMA+volume), risk.py (PTJ rules), 43 tests passing, first backtest run (1 trade, -0.14% on Jun-Aug 2024). Quality gate green. | 53% |

@@ -40,9 +40,14 @@
     "bot_name": "NeuralEdge",
     "initial_state": "running",
     "force_entry_enable": false,
+    "pairlists": [
+        {
+            "method": "StaticPairList"
+        }
+    ],
     "internals": {
         "process_throttle_secs": 5
     },
     "strategy": "AlphaStrategy",
-    "strategy_path": "user_data/strategies"
+    "strategy_path": "src/strategies"
 }
