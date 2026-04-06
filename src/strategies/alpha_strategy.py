@@ -1,7 +1,11 @@
 """AlphaStrategy — Layer 1 classic technical analysis.
 
-Entry: RSI < 30 (oversold) + fast EMA crosses above slow EMA + volume above average.
+Entry: RSI < 30 (oversold) + fast EMA above slow EMA + volume above average.
 Exit:  RSI > 70 (overbought) OR fast EMA crosses below slow EMA.
+
+Note: entry checks EMA *state* (fast > slow), while exit checks EMA *crossover*
+(fast crossing below slow). The asymmetry is intentional — requiring a true
+bullish crossover + RSI < 30 on the same candle would fire extremely rarely.
 
 This is the foundation strategy. Layers 2-5 (sensory, signals, autoresearch)
 will enhance it with additional convergence gates and conviction-weighted sizing.
@@ -71,11 +75,11 @@ class AlphaStrategy(IStrategy):  # type: ignore[misc]
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict[str, Any]) -> DataFrame:
-        """Generate buy signals: RSI < 30 + EMA bullish cross + volume spike.
+        """Generate buy signals: RSI < 30 + EMA bullish state + volume spike.
 
         All three conditions must be true simultaneously:
         1. RSI below oversold threshold (default 30)
-        2. Fast EMA above slow EMA (uptrend forming)
+        2. Fast EMA above slow EMA — *state*, not crossover (uptrend in place)
         3. Volume above its moving average (confirming momentum)
         """
         dataframe.loc[

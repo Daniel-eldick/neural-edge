@@ -6,21 +6,31 @@ Conviction-weighted position sizing: weak=1x, moderate=3x, strong=10x.
 
 from __future__ import annotations
 
-from typing import Literal
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 ConvictionLevel = Literal["weak", "moderate", "strong"]
 
 
 class RiskLimits:
-    """Immutable risk constants. Change these = change the risk profile."""
+    """Immutable risk constants. Change these = change the risk profile.
+
+    CONVICTION_MULTIPLIERS is wrapped in a MappingProxyType so attempts to
+    mutate it (e.g. ``RiskLimits.CONVICTION_MULTIPLIERS["yolo"] = 100``)
+    raise TypeError at runtime — the "immutable" label is enforced, not just
+    aspirational.
+    """
 
     MAX_RISK_PER_TRADE: float = 0.01  # 1% of portfolio
     MAX_DRAWDOWN: float = 0.10  # 10% from peak triggers halt
-    CONVICTION_MULTIPLIERS: dict[str, int] = {
+    CONVICTION_MULTIPLIERS: Mapping[str, int] = MappingProxyType({
         "weak": 1,
         "moderate": 3,
         "strong": 10,
-    }
+    })
 
 
 class PositionSizer:
@@ -52,7 +62,8 @@ class PositionSizer:
             conviction: One of "weak", "moderate", "strong".
 
         Returns:
-            Position size >= 0.
+            Position size >= 0. Guaranteed <= hard cap, even if
+            ``max_risk_override`` is set higher than MAX_RISK_PER_TRADE.
 
         Raises:
             ValueError: If conviction is not a valid level.
@@ -64,7 +75,15 @@ class PositionSizer:
 
         multiplier = RiskLimits.CONVICTION_MULTIPLIERS[conviction]
         size = self._portfolio_value * self._base_risk * multiplier
-        return max(size, 0.0)
+
+        # Hard cap: no position exceeds MAX_RISK_PER_TRADE * portfolio * max_multiplier.
+        # Enforces the paper-only safety mandate even if max_risk_override
+        # is set higher than MAX_RISK_PER_TRADE (defense in depth — the optimizer
+        # must never be able to bypass the 1% base risk ceiling).
+        max_multiplier = max(RiskLimits.CONVICTION_MULTIPLIERS.values())
+        hard_cap = self._portfolio_value * RiskLimits.MAX_RISK_PER_TRADE * max_multiplier
+
+        return max(min(size, hard_cap), 0.0)
 
 
 class CircuitBreaker:

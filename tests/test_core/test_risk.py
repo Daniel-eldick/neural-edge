@@ -31,6 +31,11 @@ class TestRiskLimits:
             "strong": 10,
         }
 
+    def test_conviction_multipliers_are_immutable(self) -> None:
+        """CONVICTION_MULTIPLIERS must reject mutation at runtime."""
+        with pytest.raises(TypeError):
+            RiskLimits.CONVICTION_MULTIPLIERS["yolo"] = 100  # type: ignore[index]
+
 
 class TestPositionSizer:
     """Conviction-weighted position sizing with risk cap."""
@@ -57,14 +62,26 @@ class TestPositionSizer:
         # 1% of 10k = 100, times 10x = 1000
         assert size == pytest.approx(1000.0)
 
-    def test_max_risk_cap(self) -> None:
-        """Even at highest conviction, risk never exceeds MAX_RISK_PER_TRADE * portfolio."""
+    def test_lower_override_reduces_size(self) -> None:
+        """Override below MAX_RISK_PER_TRADE reduces the base risk unit."""
         sizer = PositionSizer(portfolio_value=10_000.0, max_risk_override=0.005)
         size = sizer.calculate("strong")
         # 0.5% of 10k = 50, times 10x = 500
-        # But overall cap is still portfolio * MAX_RISK_PER_TRADE = 10000 * 0.01 = 100
-        # The override makes base smaller, but total can't exceed hard cap
-        assert size <= 10_000.0 * RiskLimits.MAX_RISK_PER_TRADE * 10
+        assert size == pytest.approx(500.0)
+
+    def test_hard_cap_enforced_on_excessive_override(self) -> None:
+        """Override above MAX_RISK_PER_TRADE must be capped at the hard ceiling.
+
+        Defense in depth: the optimizer must never be able to bypass the
+        1% base risk ceiling by passing a larger max_risk_override.
+        """
+        sizer = PositionSizer(portfolio_value=10_000.0, max_risk_override=0.5)
+        size = sizer.calculate("strong")
+        # Without cap: 10000 * 0.5 * 10 = 50000 (500% of portfolio — dangerous)
+        # With cap:    10000 * 0.01 * 10 = 1000 (10% of portfolio — safe)
+        hard_cap = 10_000.0 * RiskLimits.MAX_RISK_PER_TRADE * 10
+        assert size == pytest.approx(hard_cap)
+        assert size == pytest.approx(1000.0)
 
     def test_zero_portfolio_returns_zero(self) -> None:
         """Zero portfolio = zero position size (not an error)."""
