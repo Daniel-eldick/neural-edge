@@ -1,79 +1,21 @@
 # NeuralEdge
 
-Multi-layer AI trading bot with autonomous strategy optimization. Paper trading only.
+Research project for an AI apprentice trader that learns selectively from historical market replay and later paper trading.
 
-## Architecture
+**Start here: [Apprentice trader reference and plan](docs/active/APPRENTICE_TRADER_PLAN.md).**
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Layer 5: AUTORESEARCH LOOP                             │
-│  Autonomous strategy optimization (Karpathy pattern)    │
-├─────────────────────────────────────────────────────────┤
-│  Layer 4: MIROFISH SWARM (stub)                         │
-├─────────────────────────────────────────────────────────┤
-│  Layer 3: KNOWLEDGE GRAPH (stub)                        │
-├─────────────────────────────────────────────────────────┤
-│  Layer 2: SENSORY SYSTEM                                │
-│  News · On-chain · Sentiment · Macro                    │
-├─────────────────────────────────────────────────────────┤
-│  Layer 1: FREQTRADE + COINGECKO                         │
-│  Execution · TA · Risk management · Paper trading       │
-└─────────────────────────────────────────────────────────┘
-```
+Status: first offline replay foundation implemented. It includes causal observations, simulated accounting, risk enforcement and a SQLite journal. The AI trader, teacher and learning loop are still pending. Profitability is unproven.
 
-## Setup
+- [Documentation index](docs/README.md)
+- [Agent instructions](AGENTS.md)
+- [Historical setup plan](docs/archive/NEURAL_EDGE_PROJECT_SETUP.md)
+
+Run the offline replay with your synchronized OHLCV CSV:
 
 ```bash
-# Prerequisites (macOS)
-brew install ta-lib
-
-# Create environment
-python -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -e ".[dev]"
-
-# Configure API keys
-cp .env.example .env
-# Edit .env with your keys
-
-# Run paper trading
-freqtrade trade --dry-run --config config.json
+python -m src.replay --csv candles.csv --journal run-001.sqlite
 ```
 
-## Development
+See the reference plan's **Offline replay usage** section for setup, CSV format and simulation limits. This command runs a fixed comparison policy, not the AI apprentice.
 
-```bash
-# Quality gate (required before commits)
-ruff check . && mypy . && pytest -x --timeout=30
-
-# Run tests
-pytest                                    # All tests
-pytest tests/test_strategies/             # Single directory
-pytest -k "test_rsi_buy_signal"           # Single test
-
-# Lint + format
-ruff check .                              # Lint
-ruff format .                             # Auto-format
-mypy .                                    # Type checking
-
-# Backtesting
-freqtrade backtesting --strategy AlphaStrategy
-```
-
-## Key Constraints
-
-- **Paper trading only** — `dry_run: true` until explicitly authorized
-- **Immutable evaluator** — `src/autoresearch/prepare.py` cannot be modified by the optimization loop
-- **Signal convergence** — Minimum 3 uncorrelated signals required before any trade
-- **Risk limits** — Max 1% per trade, 10% drawdown circuit breaker
-
-## Tech Stack
-
-- **Python 3.11+** — Core language
-- **Freqtrade** — Trading engine (via pip, not fork)
-- **CoinGecko** — Market data
-- **Alpaca** — News feed
-- **CryptoQuant** — On-chain data
-- **pytest + ruff + mypy** — Quality tooling
+The existing Freqtrade config remains separate: its three-position limit and legacy sizing helper do not enforce the new replay limits. No live trading or background worker is enabled.

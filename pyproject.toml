@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Multi-layer AI trading bot with autonomous strategy optimization"
 requires-python = ">=3.11"
 dependencies = [
+    "numpy<2.5",  # Keep type stubs compatible with the Python 3.11 target.
     "freqtrade>=2024.1",
     "pycoingecko>=3.1.0",
     "requests>=2.31.0",
