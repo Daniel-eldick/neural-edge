@@ -1,8 +1,8 @@
 # NeuralEdge — apprentice trader reference and implementation plan
 
 Date: 2026-09-20
-Status: PROPOSED; implementation not authorized by this documentation handoff.
-Implementation progress for the apprentice system: 0%.
+Status: IMPLEMENTATION AUTHORIZED on 2026-09-23; first offline foundation implemented.
+Progress is tracked by milestone evidence below, not an estimated overall percentage.
 Owner: Daniel. Intended reader: the next implementing agent/CTO.
 
 ## 1. Purpose and decision boundary
@@ -11,7 +11,7 @@ Build a research system that behaves like a selective junior trader: study a sou
 
 The research question is whether staged learning improves unseen, cost-adjusted trading performance over a frozen agent and simple strategies. Profitability is unproven. A working program, a persuasive journal, and one profitable period are different achievements. No dependable income deadline is justified.
 
-This file is the single active project reference. Other status pages are navigation pointers. The April setup plan is preserved as historical evidence, not an execution queue. Do not resume its sensory-system tasks automatically. No application code, config, dependencies, tests, services or trading sessions are changed by this handoff.
+This file is the single active project reference. Other status pages are navigation pointers. The April setup plan is preserved as historical evidence, not an execution queue. Do not resume its sensory-system tasks automatically. The September 20 documentation handoff is followed by the September 23 implementation increment described below.
 
 ## 2. Agreed requirements
 
@@ -32,7 +32,7 @@ This file is the single active project reference. Other status pages are navigat
 | Learning | Staged: memory, then strategy-selection weights, then rules |
 | Historical screening | Net profit, annualized Sharpe > 1, maximum drawdown < 10% |
 | Operating goal | Background operation, eventually minimal weekly review |
-| Current authorization | Review, documentation and repository organization only |
+| Current authorization | Implementation and local verification; no deployment, paid inference or real trading |
 
 The proposed 1.5% aggregate cap was NOT accepted; preserve 2.5%.
 The recommendation to defer scalping was NOT accepted as a scope deletion. Retain it as a separate milestone requiring better execution evidence.
@@ -170,7 +170,9 @@ Paper trading cannot prove live profitability; live activation requires a separa
 
 ## 9. Work sequence and acceptance tests
 
-All tasks below are NOT STARTED. The next agent must obtain implementation authorization.
+Implementation authorized on 2026-09-23. The first increment implements a standalone causal replay boundary and stop-based risk/accounting, without changing the legacy Freqtrade strategy. P0 engine integration and dependency reproducibility remain explicit validation tasks.
+
+First-increment acceptance: immutable prefix-only observations, signals filled no earlier than next candle open, gap-aware stops, stop-first ambiguous candles, fee/slippage accounting, shared five-position/2.5% risk caps, 0.5% sizing, 24h exits, latched drawdown halt, append-only run journal and a runnable CSV command. Tests use hand-calculated and adversarial fixtures; no synthetic fixture is performance evidence. Model/teacher integration follows once this boundary is verified.
 
 | Milestone | Work | Acceptance evidence |
 | --- | --- | --- |
@@ -185,7 +187,41 @@ All tasks below are NOT STARTED. The next agent must obtain implementation autho
 
 Critical tests also include: stops and targets touched inside the same candle; adverse gaps; teacher hindsight injection; stale higher-timeframe values; warmup leakage; corrupted checkpoints; symbol collisions; stop widening; tiny stops implying unaffordable notional; NaN prices; pending orders exceeding risk; provider timeouts and malformed responses.
 
-Proposed future file areas (not created now): src/replay/, src/agents/, src/memory/, src/evaluation/, src/execution/, corresponding tests, versioned experiment manifests and deployment config. Keep src/core/ and the existing baseline strategy. Do not restructure code merely to match this sketch before the engine decision.
+Implemented file area: src/replay/. Future areas: src/agents/, src/memory/, src/evaluation/, src/execution/, corresponding tests, versioned experiment manifests and deployment config. Keep src/core/ and the existing baseline strategy.
+
+### Offline replay usage
+
+From the repository root:
+
+```bash
+python -m venv .venv
+.venv/bin/pip install -e '.[dev]'
+.venv/bin/python -m src.replay --csv candles.csv --journal run-001.sqlite
+.venv/bin/ruff check .
+.venv/bin/mypy .
+.venv/bin/pytest -x --timeout=30
+```
+
+CSV header: `symbol,opened_at,open,high,low,close,volume`. Timestamps are integer UTC Unix seconds at candle **open**. All symbols must have one candle at every timestamp, at a uniform 300-second interval (or `--interval 60`). Duplicates, gaps and inconsistent symbol coverage are rejected. Supply only fully closed candles. Rows may be unsorted. No data download or exchange connection occurs.
+
+Defaults: $1,000 simulated spot cash, 0.1% fee per side, 0.1% adverse slippage per fill. Override with `--balance`, `--fee`, `--slippage`. These are experiment assumptions, not venue quotes. Each journal path must be new. SQLite `events` stores ordered JSON payloads including input hash, settings, decisions, vetoes, fills, equity and result. Query with `SELECT payload FROM events ORDER BY sequence`.
+
+The comparison policy enters when a close exceeds the previous 20-bar high, proposes a 2% price stop and 4% target, and otherwise waits. It is a plumbing control, not a selected profitable strategy. `Policy.decide(Observation)` is the adapter boundary for a later apprentice. Observations contain immutable closed-candle prefixes and current portfolio state; local policy code is trusted, not sandboxed.
+
+Execution ordering is open mark → gap/age exits → requested exits → risk-checked entries → intrabar protective exits → close mark → new decisions. Simultaneous entries are admitted sequentially in symbol order with updated cash/equity. Close-derived signals fill at the next open with costs; there is no same-close fill. Both stop and target touched means stop first. Protective gaps fill at the open. Final pending proposals expire; remaining positions stay marked to market and are reported explicitly.
+
+Limits of this increment:
+
+- Risk caps govern entry admission. Existing market exposure can exceed planned risk after price changes or gaps. Stops do not guarantee a maximum loss. The drawdown halt is latched for the run, blocks entries, and keeps protective exits active.
+- Drawdown is sampled at opens/closes and executions; unknown intrabar portfolio paths are not reconstructed. Results can understate true drawdown. End equity includes unrealized positions and does not deduct hypothetical future liquidation fees.
+- One position per symbol, long-only, no borrowing. No exchange lot sizes, minimum notionals, spread/queue/partial-fill models, measured decision latency or chart rendering yet. Zero additional decision latency is assumed.
+- SQLite is an audit journal, not a resumable account checkpoint. Replay refuses instance reuse and journal overwrite. Restart recovery and durable breaker restoration remain unfinished; no unattended operation.
+- No teacher, learned memory, curriculum retrieval, provider calls, exit modification or separate scalping agent yet. A 60-second replay is exploratory and cannot validate scalping profitability.
+- `daily_sharpe` is null until the evaluation layer implements a declared daily-return convention. There is no pass/fail profitability screen in this increment.
+- Freqtrade remains a separate baseline. This independent replay avoids requiring stateful agent decisions inside its vectorized strategy pipeline; a paper-execution bridge is still unverified.
+- Python 3.12 was used for local verification. NumPy is capped below 2.5 so its stubs parse with the project's Python 3.11 type-check target. Full dependency locking and Python 3.11 runtime verification remain P0 tasks.
+
+P1/P2 are partial: simulation and admission enforcement exist; restart and realistic execution do not. P3 has the decision interface only. Next work: checkpoint/recovery and daily evaluation, then a recorded-response trader/teacher adapter with causal memory tests before any paid-model experiment.
 
 ## 10. Background operation and cost control
 
@@ -204,7 +240,7 @@ No additional conceptual questionnaire is needed. Before spending or launching, 
 - Whether to stage the scalping milestone later; it remains requested scope.
 - Exact evaluation dates, evidence thresholds and emergency liquidation policy.
 
-First action for the next agent: read this document, inspect baseline/runtime dependencies, and produce a bounded P0 implementation proposal. Do not automatically execute the April task list or regard this PR as authorization to build.
+First action for the next agent: reproduce the checks and continue the explicitly unfinished milestones above. Implementation is authorized; the April task list remains superseded. Resolve credentials and spending limits before paid model integration.
 
 ## 12. Documentation organization and verification
 
@@ -212,7 +248,7 @@ Root README is the entry point. AGENTS.md and CLAUDE.md route agents here. docs/
 
 Inherited framework rules/guides may mention unrelated products or tools. Root agent guidance resolves current project commands and scope; broad framework migration is deferred. Existing source, tests, config and hook scripts are preserved.
 
-This documentation change is verified by Markdown link/path checks, diff review and confirming no runtime files changed. No backtest, deployment or trading process is launched. Revert this documentation commit/PR to roll back; no data or source deletion is required.
+The initial documentation handoff used link/path and scope checks. Implementation verification uses lint, strict typing and the test suite, including hand-calculated accounting and adversarial simulation cases. Synthetic fixtures are correctness checks, not trading performance evidence. No deployment or exchange trading process is launched.
 
 ## 13. Sources and limitations
 
@@ -228,3 +264,5 @@ Source links support platform context. They do not establish that the apprentice
 ## Progress log
 
 2026-09-20: Repository statically reviewed; user decisions consolidated; stale plan superseded; documentation handoff prepared. Apprentice implementation remains not started.
+
+2026-09-23: User authorized implementation. Added offline causal replay, immutable observations, next-open fills, stop-based sizing, five-position admission, fee/slippage accounting, gap/age exits, latched drawdown halt, exclusive SQLite journal and CSV CLI. Verification: ruff passed; strict mypy passed across 33 files; pytest **75 passed, 17 expected failures** (pre-existing sensory stubs), including 17 new replay tests and a CLI-to-journal integration test. No real historical performance experiment or model call was run. NumPy compatibility cap added; four obsolete TA-Lib type suppressions removed without changing baseline behavior. P0/P1/P2 remain partial; next steps and limitations are recorded above.

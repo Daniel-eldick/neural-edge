@@ -1,10 +1,10 @@
 # Agent handoff
 
 Read [the single reference plan](docs/active/APPRENTICE_TRADER_PLAN.md) first.
-Current authorization: documentation and organization only. Do not build, deploy, start workers, spend API credits or enable live trading without the next explicit request.
+2026-09-23: Daniel explicitly authorized implementation. Build and verify offline replay and paper-only foundations. Deployment, unattended workers, paid API calls and real trading still require separate authorization.
 
 The reference plan supersedes the April five-layer architecture and its task queue. User-approved limits are recorded there; proposed defaults are labeled separately.
-Existing runtime code does not yet enforce the new limits.
+The offline replay enforces admission limits; the legacy Freqtrade runtime does not. Read the plan's implementation limitations before extending either.
 
 Branch from develop; PRs target develop. Do not merge or push to main as part of this handoff.
 Preserve existing source and tests. Never treat archived completion percentages as current readiness.

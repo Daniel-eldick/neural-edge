@@ -1,0 +1,61 @@
+"""Run an offline baseline replay: python -m src.replay --help."""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+import json
+from dataclasses import asdict
+from pathlib import Path
+
+from src.replay.engine import Candle, Decision, Observation, Replay, Settings
+from src.replay.journal import Journal
+
+
+class BreakoutBaseline:
+    """Fixed comparison policy, NOT an AI apprentice or a recommended strategy."""
+
+    def decide(self, observation: Observation) -> Decision:
+        bars = observation.candles
+        if observation.halted or len(bars) < 21:
+            return Decision()
+        if any(p.symbol == bars[-1].symbol for p in observation.positions):
+            return Decision(reason="Existing position managed by protective orders")
+        latest = bars[-1]
+        if latest.close > max(c.high for c in bars[-21:-1]):
+            return Decision("ENTER_LONG", latest.close * 0.98, latest.close * 1.04,
+                            "Close exceeds prior 20-bar high")
+        return Decision()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--csv", type=Path, required=True)
+    parser.add_argument("--journal", type=Path, required=True)
+    parser.add_argument("--interval", type=int, choices=(60, 300), default=300)
+    parser.add_argument("--balance", type=float, default=1000)
+    parser.add_argument("--fee", type=float, default=0.001)
+    parser.add_argument("--slippage", type=float, default=0.001)
+    args = parser.parse_args()
+    settings = Settings(args.balance, args.interval, args.fee, args.slippage)
+    with args.csv.open(newline="") as source:
+        candles = [Candle(row["symbol"], int(row["opened_at"]),
+                          *[float(row[k]) for k in ("open", "high", "low", "close", "volume")])
+                   for row in csv.DictReader(source)]
+    journal = Journal(args.journal)
+    try:
+        digest = hashlib.sha256(args.csv.read_bytes()).hexdigest()
+        journal.record({"kind": "MANIFEST", "sha256": digest,
+                        "policy": "breakout-baseline-v1", "simulation": "coarse-candles-v1"})
+        result = Replay(settings, journal).run(candles, BreakoutBaseline())
+        print(json.dumps(asdict(result), indent=2, allow_nan=False))
+    except Exception as exc:
+        journal.record({"kind": "FAILED", "error": str(exc)})
+        raise
+    finally:
+        journal.close()
+
+
+if __name__ == "__main__":
+    main()
