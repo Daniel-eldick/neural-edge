@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; form-action 'none'">
+<title>NeuralEdge · Cockpit</title>
+<style>
+:root{color-scheme:dark;--bg:#101918;--panel:#182321;--line:#33423d;--muted:#a8b8b1;--mint:#a4e9c9;--ink:#eff5ec}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:1200px;margin:auto;padding:38px 40px}header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:24px;gap:24px}a{color:var(--mint);text-decoration:none;padding:12px 0;display:inline-block}nav{display:flex;gap:28px}.brand{letter-spacing:.16em;font-size:15px;font-weight:700}.dot{color:var(--mint)}h1{font-size:clamp(36px,5vw,60px);line-height:1.08;font-weight:500;letter-spacing:-.04em;max-width:700px;margin:20px 0}h2{font-size:26px;line-height:1.3;margin:12px 0}h3{font-size:18px;margin:0 0 6px}.intro{padding:48px 0 32px}.intro p{max-width:660px;color:var(--muted)}.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mint)}.muted{color:var(--muted);font-size:13px}.status{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:40px}.status>div{padding:20px;background:var(--panel)}.status strong{font-size:15px;display:block;margin-bottom:6px}.status p{font-size:13px;color:var(--muted);margin:0}article{padding:30px;background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:24px;overflow-wrap:anywhere}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:30px 0}.metrics div{border-left:2px solid var(--line);padding-left:16px}dt{font-size:12px;color:var(--muted)}dd{font-size:23px;margin:4px 0;font-variant-numeric:tabular-nums}svg{width:100%;height:auto}.empty-chart{padding:38px 24px;border:1px dashed var(--line);border-radius:8px;color:var(--muted);font-size:14px}details{border-top:1px solid var(--line);margin-top:16px;padding-top:4px}summary{cursor:pointer;min-height:48px;padding:12px 0;color:var(--mint)}details p,li{font-size:14px;color:var(--muted)}li{padding:7px 0}#next{margin-top:48px}#next>p{color:var(--muted);max-width:700px}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:28px 0}.steps>div{border-top:1px solid var(--line);padding-top:20px}.steps p{font-size:14px;color:var(--muted)}footer{border-top:1px solid var(--line);margin-top:50px;padding:20px 0;color:var(--muted);font-size:12px}a:focus-visible,summary:focus-visible{outline:2px solid var(--mint);outline-offset:4px}@media(max-width:650px){main{padding:24px 18px}header{align-items:flex-start;flex-direction:column;gap:8px}.intro{padding-top:30px}.status,.steps{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr);gap:20px}article{padding:22px}dd{font-size:20px}}
+</style>
+</head>
+<body><main>
+<header><div class="brand"><span class="dot">●</span> NEURALEDGE</div><nav aria-label="Main"><a href="#results">Results</a><a href="#next">What comes next</a></nav></header>
+<section class="intro"><div class="eyebrow">Research cockpit / Saved-results snapshot</div><h1>See what your<br>agent is learning.</h1><p>Every run, its results, and the evidence behind it. This first view shows saved experiments; the apprentice and its learning loop are still being connected.</p><div class="muted">Generated {{generated}} · Refreshing this page does not regenerate results.</div></section>
+<section class="status" aria-label="Implementation status at snapshot generation">
+<div><strong>Agent not connected</strong><p>Offline simulator built. AI trader and operating controls are next.</p></div>
+<div><strong>Jev not connected</strong><p>API access and decision integration still needed.</p></div>
+<div><strong>Learning not evaluated</strong><p>No teacher, memory progression or controlled comparisons yet.</p></div>
+</section>
+<section id="results" aria-label="Saved experiment results">{{runs}}</section>
+<section id="next"><div class="eyebrow">The path to your agent</div><h2>Learning needs evidence.</h2><p>More trades or a larger journal do not prove growth. We need to compare the learning agent against its frozen version on unseen data, after costs.</p><div class="steps">
+<div><h3>01 / Connect the brain</h3><p>Trader, Jev decision support, teacher and dated memory behind the independent risk governor.</p></div>
+<div><h3>02 / Measure the learning</h3><p>Daily account returns, trade explanations, AI costs, lessons and tested candidate versions.</p></div>
+<div><h3>03 / Operate from here</h3><p>Run, pause, review and approve improvements once restart recovery and safe controls are verified.</p></div>
+</div></section>
+<footer>Paper-only research · No live orders · This snapshot does not monitor a running process.</footer>
+</main></body></html>

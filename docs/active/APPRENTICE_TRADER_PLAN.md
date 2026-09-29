@@ -81,7 +81,9 @@ One-minute scalping requires trade/quote data or explicitly limited simulation c
 Model selection remains open:
 - Start with one model provider behind a narrow interface; record exact version and cost.
 - Strong LLM for trader/teacher experiments; separate prompts, state and permissions.
-- Jev is optional; benchmark it on the task before granting decision influence.
+- Daniel reaffirmed on 2026-09-29 that Jev belongs in the intended new brain. Integrate it
+  behind a decision-support interface and benchmark it before granting decision influence.
+  API access and spending authorization are still unresolved; it is not connected yet.
 - Do not interpret classification confidence as probability of profitable return without calibration.
 - Chart images are an optional controlled experiment; numerical input is the proposed baseline.
 - No claim that chart recognition reveals actual participant psychology.
@@ -262,6 +264,86 @@ The initial documentation handoff used link/path and scope checks. Implementatio
 Source links support platform context. They do not establish that the apprentice will earn money. Curriculum selection and engine integration remain future work.
 
 ## Progress log
+
+### 2026-09-29 continuation: one cockpit and measured learning
+
+Daniel authorized updating the local checkout and continuing implementation, with one cockpit
+for performance and agent control. GitHub PR #2 (`ca96c01`) is the current implementation
+baseline; it includes PR #1's handoff. Both PRs remain open. The previous local
+`codex/risk-execution-integration` branch and its uncommitted work were preserved in a named
+Git stash before switching to `codex/apprentice-cockpit`. Do not apply that older architecture
+over this plan. No GitHub merge was performed.
+
+**Current increment: results cockpit — IMPLEMENTED; browser visual verification pending.** Standard tier: offline,
+read-only presentation of saved results, no server-side controls, authentication, paid calls,
+trading or database writes. This implements the report surface of the authorized direction;
+it does not claim completion of paper operations or the AI brain.
+
+**UX brief:** Daniel should open one page and immediately see whether an agent is connected,
+what actually ran, how it performed, and whether learning has been measured. Desktop-first,
+responsive for future phone access; local versus hosted preference is being confirmed.
+Journey: open cockpit → inspect saved run → inspect performance and decision record.
+Empty state says no runs; incomplete/error runs are never presented as successful results.
+This is a dated snapshot, not a live monitor. Reading it offline requires no external assets.
+
+```text
+NEURALEDGE                             Saved-results snapshot / generated time
+Agent: not connected   Jev: not connected   Learning: not evaluated
+Results | What comes next
+Saved run [policy / source / historical interval]
+Net return | Ending equity | Max drawdown | Closed trades | Open positions
+Recorded equity chart (only when actual equity samples exist)
+Decision / trade record + explicit sample and cost limitations
+```
+
+Heuristics: visibility via snapshot date and explicit connection state; forgiveness via
+read-only operation; minimalism via one page; consistent metric definitions per source;
+responsive layout; actionable import errors; results immediately visible; plain-language
+labels. No existing UI/components to reuse. Controls and hosting remain a later increment,
+not decorative buttons that imply functioning operations.
+
+**Implementation and tests:**
+
+| Task | Acceptance / failing test | Status |
+| --- | --- | --- |
+| Import saved Freqtrade ZIP results and replay SQLite journals read-only | Hand-calculated return/win rate; unfinished journal rejected; files unchanged | [x] |
+| Render local cockpit with genuine results and evidence limits | HTML escapes journal text; unknown metrics absent; no credentials/config embedded; no invented equity curve | [x] |
+| Provide one-command generation and actual saved baseline results | CLI created offline HTML containing both existing April result archives; file panel requested | [x] |
+| Verify inherited environment and synchronize status entry points | ruff/mypy/pytest pass; status pointers corrected; visual check blocked by browser file-URL policy | [~] |
+
+Scope: four tasks; re-plan if more than six. Files: `src/cockpit/` (new read-only reporting),
+`tests/test_cockpit.py`, README and this reference. Correct the existing TA-Lib typing
+incompatibility only if needed to reproduce the inherited gate; baseline strategy behavior
+must remain identical. No source dependency added.
+
+Failure modes: missing/corrupt/incomplete results fail explicitly; no zero-score fallback.
+SQLite is opened with `mode=ro`, bounded-size JSON archive members are read without extraction,
+and user-controlled text is HTML-escaped. Output excludes saved configuration/API credentials.
+Repeated runs are not interpreted as learning; Freqtrade trade exits cannot supply an honest
+mark-to-market equity curve. Large replay histories use bounded chart/detail samples with
+sampling disclosed. Source archives/journals remain unchanged. Rollback removes the report
+package/generated HTML and leaves trading evidence intact. No DB service/RLS applies.
+
+**Next implementation sequence:** finish checkpoint/recovery and daily evaluation; integrate
+trader and Jev behind recorded-response tests; add teacher and timestamped memory; compare
+learning-enabled versus frozen runs after trading and AI costs; add cockpit run/pause controls
+and hosted access once persistent state and authentication are ready. Proposed lessons can be
+generated daily; promotion requires measured evidence and human review. Improvement is a
+hypothesis, not a promised daily increase in profit. TypeSafe access, spending ceiling, host,
+and alerts must be resolved before paid inference or unattended deployment.
+
+Verification: the new cockpit tests first failed on the absent module, then passed after
+implementation. Full gate: ruff clean; mypy clean (37 files); 82 passed / 17 pre-existing
+expected failures. Four targeted TA-Lib `attr-defined` suppressions restore compatibility
+with the installed dynamic abstract API without altering indicator behavior. The lower
+test count than the preserved older branch reflects different work, not deletion of its
+evidence. This branch builds on the 75-pass/17-xfail GitHub apprentice baseline.
+
+Generated artifact: `user_data/cockpit/index.html` (ignored local output). The Codex file
+panel open request was queued; an automated browser visit to the file URL was rejected by
+browser security policy. No alternate browser/server workaround was attempted. Visual
+verification remains outstanding; HTML/content correctness is covered by automated tests.
+The cockpit is a first reporting increment, not the requested finished operational cockpit.
 
 2026-09-20: Repository statically reviewed; user decisions consolidated; stale plan superseded; documentation handoff prepared. Apprentice implementation remains not started.
 

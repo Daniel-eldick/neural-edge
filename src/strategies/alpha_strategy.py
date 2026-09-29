@@ -60,15 +60,16 @@ class AlphaStrategy(IStrategy):  # type: ignore[misc]
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict[str, Any]) -> DataFrame:
         """Add RSI, EMA fast/slow, and volume moving average."""
+        # TA-Lib generates these abstract indicator names dynamically.
         # RSI
-        dataframe["rsi"] = ta.RSI(dataframe, timeperiod=self.rsi_period)
+        dataframe["rsi"] = ta.RSI(dataframe, timeperiod=self.rsi_period)  # type: ignore[attr-defined]
 
         # Exponential Moving Averages
-        dataframe["ema_fast"] = ta.EMA(dataframe, timeperiod=self.ema_fast_period)
-        dataframe["ema_slow"] = ta.EMA(dataframe, timeperiod=self.ema_slow_period)
+        dataframe["ema_fast"] = ta.EMA(dataframe, timeperiod=self.ema_fast_period)  # type: ignore[attr-defined]
+        dataframe["ema_slow"] = ta.EMA(dataframe, timeperiod=self.ema_slow_period)  # type: ignore[attr-defined]
 
         # Volume moving average for confirmation
-        dataframe["volume_ma"] = ta.SMA(
+        dataframe["volume_ma"] = ta.SMA(  # type: ignore[attr-defined]
             dataframe["volume"], timeperiod=self.volume_ma_period
         )
 
