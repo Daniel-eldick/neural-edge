@@ -83,7 +83,8 @@ Model selection remains open:
 - Strong LLM for trader/teacher experiments; separate prompts, state and permissions.
 - Daniel reaffirmed on 2026-09-29 that Jev belongs in the intended new brain. Integrate it
   behind a decision-support interface and benchmark it before granting decision influence.
-  API access and spending authorization are still unresolved; it is not connected yet.
+  API connectivity is verified under the USD 3/month allowance (2026-09-30).
+  No trading policy calls it yet; decision influence remains unvalidated.
 - Do not interpret classification confidence as probability of profitable return without calibration.
 - Chart images are an optional controlled experiment; numerical input is the proposed baseline.
 - No claim that chart recognition reveals actual participant psychology.
@@ -206,7 +207,15 @@ python -m venv .venv
 
 CSV header: `symbol,opened_at,open,high,low,close,volume`. Timestamps are integer UTC Unix seconds at candle **open**. All symbols must have one candle at every timestamp, at a uniform 300-second interval (or `--interval 60`). Duplicates, gaps and inconsistent symbol coverage are rejected. Supply only fully closed candles. Rows may be unsorted. No data download or exchange connection occurs.
 
-Defaults: $1,000 simulated spot cash, 0.1% fee per side, 0.1% adverse slippage per fill. Override with `--balance`, `--fee`, `--slippage`. These are experiment assumptions, not venue quotes. Each journal path must be new. SQLite `events` stores ordered JSON payloads including input hash, settings, decisions, vetoes, fills, equity and result. Query with `SELECT payload FROM events ORDER BY sequence`.
+Defaults: $1,000 simulated spot cash, 0.1% fee per side, 0.1% adverse slippage per fill. Override with `--balance`, `--fee`, `--slippage`. These are experiment assumptions, not venue quotes. Fresh runs require a new journal path. SQLite `events` stores ordered JSON payloads including input hash, settings, decisions, vetoes, fills, equity, complete UTC daily returns and result. Query with `SELECT payload FROM events ORDER BY sequence`.
+
+Add `--stop-after 500` to pause after 500 additional candle batches; the CLI returns
+`completed: false` without fabricating a final RESULT. Run the same command with `--resume`
+and without `--stop-after` to finish. An interrupted run also resumes from the last committed
+batch. Input data, settings, replay source, policy class source and policy version must match;
+completed runs cannot resume. Preserve the journal and its persistent `.lock` sidecar, which
+must not be deleted while any writer is open. Single-writer recovery uses local macOS/Linux
+advisory locking. Non-checkpoint policies may still run fresh, but cannot pause or resume.
 
 The comparison policy enters when a close exceeds the previous 20-bar high, proposes a 2% price stop and 4% target, and otherwise waits. It is a plumbing control, not a selected profitable strategy. `Policy.decide(Observation)` is the adapter boundary for a later apprentice. Observations contain immutable closed-candle prefixes and current portfolio state; local policy code is trusted, not sandboxed.
 
@@ -217,13 +226,16 @@ Limits of this increment:
 - Risk caps govern entry admission. Existing market exposure can exceed planned risk after price changes or gaps. Stops do not guarantee a maximum loss. The drawdown halt is latched for the run, blocks entries, and keeps protective exits active.
 - Drawdown is sampled at opens/closes and executions; unknown intrabar portfolio paths are not reconstructed. Results can understate true drawdown. End equity includes unrealized positions and does not deduct hypothetical future liquidation fees.
 - One position per symbol, long-only, no borrowing. No exchange lot sizes, minimum notionals, spread/queue/partial-fill models, measured decision latency or chart rendering yet. Zero additional decision latency is assumed.
-- SQLite is an audit journal, not a resumable account checkpoint. Replay refuses instance reuse and journal overwrite. Restart recovery and durable breaker restoration remain unfinished; no unattended operation.
+- SQLite atomically checkpoints account, pending decisions, policy state, daily moments and risk halt with each candle batch. Replay refuses instance reuse and accidental journal overwrite. Recovery is offline only; external calls/orders still require deduplication/reconciliation. No unattended operation.
 - No teacher, learned memory, curriculum retrieval, provider calls, exit modification or separate scalping agent yet. A 60-second replay is exploratory and cannot validate scalping profitability.
-- `daily_sharpe` is null until the evaluation layer implements a declared daily-return convention. There is no pass/fail profitability screen in this increment.
+- `daily_sharpe` uses complete UTC-day equity returns, zero risk-free rate and sqrt(365) annualization with sample standard deviation. It is null below 30 complete days or for zero variance, with an explicit reason. Partial days are excluded. There is no pass/fail profitability screen in this increment.
 - Freqtrade remains a separate baseline. This independent replay avoids requiring stateful agent decisions inside its vectorized strategy pipeline; a paper-execution bridge is still unverified.
 - Python 3.12 was used for local verification. NumPy is capped below 2.5 so its stubs parse with the project's Python 3.11 type-check target. Full dependency locking and Python 3.11 runtime verification remain P0 tasks.
 
-P1/P2 are partial: simulation and admission enforcement exist; restart and realistic execution do not. P3 has the decision interface only. Next work: checkpoint/recovery and daily evaluation, then a recorded-response trader/teacher adapter with causal memory tests before any paid-model experiment.
+P1/P2 are partial: simulation, admission enforcement and offline restart recovery exist;
+realistic exchange execution remains unfinished. P3 has a decision interface and independently
+verified Jev connector, but no trading adapter. Next work: durable recorded-response decisions,
+then a trader/teacher adapter with causal memory tests before a budgeted model experiment.
 
 ## 10. Background operation and cost control
 
@@ -265,6 +277,89 @@ The initial documentation handoff used link/path and scope checks. Implementatio
 Source links support platform context. They do not establish that the apprentice will earn money. Curriculum selection and engine integration remain future work.
 
 ## Progress log
+
+### 2026-09-30 continuation: replay recovery and daily measurement
+
+Daniel authorized continued implementation without further input. **Status: IMPLEMENTED.
+Tier: Full — persistent account state and risk protection.** No real trades, paid inference,
+unseen-market experiment, deployment or unattended worker in this increment.
+
+**1. Purpose:** resume an interrupted offline experiment without resetting its money, pending
+decisions, positions, risk halt or daily performance record. Measure results consistently
+before adding an adaptive trader.
+
+**2. Design:** keep the existing replay API and candle execution order. Add opt-in `--resume`
+and `--stop-after` (candle batches) to the baseline CLI. A checkpoint-capable policy provides
+a version ID plus JSON state save/restore methods. Checkpoints bind exact normalized candle
+data, settings, policy ID and policy class source hash; mismatches fail before decisions.
+Journal events and the matching account/policy checkpoint commit atomically per candle batch.
+An OS advisory file lock permits one replay writer; completed journals cannot resume.
+Checkpoints are checksummed JSON, never pickle. Restarts reconstruct causal lookback from the
+verified dataset, then continue with the pending proposals from the last committed close.
+Crashes during a batch leave that batch uncommitted; its simulated fills/decisions are replayed.
+This does not promise exactly-once external model calls or real exchange orders.
+
+Daily convention: daily UTC marked-to-market simple returns, zero risk-free rate,
+`sqrt(365) * mean / sample_std(ddof=1)`. Count only full midnight-to-midnight intervals;
+exclude leading/trailing partial days and include zero-return days. At least 30 complete
+days are required to display descriptive Sharpe; zero variance produces an explicit unavailable
+reason, never a fabricated zero/infinite score. This is a reporting threshold, not a profitability
+or strategy-promotion gate. Preserve the streaming daily accumulator in every checkpoint.
+
+**3. Tasks / tests (8-task scope; re-plan above 12):**
+
+| # | Task | Failing acceptance test | Status |
+| --- | --- | --- | --- |
+| 1 | Daily-metric contract tests | hand-calculated returns, partial UTC days, zero variance, finite input and sample count | [x] |
+| 2 | Streaming daily metrics | exact full-day returns and serializable accumulator parity | [x] |
+| 3 | Recovery contract tests | interrupted/resumed result and event parity; pending entries, risk halt and policy state retained | [x] |
+| 4 | Atomic journal/checkpoint and exclusive writer | rollback leaves prior checkpoint/events intact; corruption/concurrent writer/completed resume rejected | [x] |
+| 5 | Bind replay state to data/settings/policy | changed data, cost settings or policy identity fail before policy calls | [x] |
+| 6 | CLI resume and bounded pause | CLI pause → fresh process resume = uninterrupted result; missing journal does not create a file | [x] |
+| 7 | Report daily metrics in cockpit | actual sample count/reason shown; old archives remain honestly unavailable | [x] |
+| 8 | Regression gate, documentation and feature PR | ruff/mypy/pytest pass; no API calls, safety/config changes or fake performance claims | [x] |
+
+**4. Files / blast radius:** `src/replay/{engine,journal,__main__,performance}.py`,
+`src/cockpit/{report.py,template.html}`, focused replay/performance/cockpit tests, README and status pointers.
+Risk is high for replay accounting and checkpoint restoration; existing hand-calculated risk,
+gap, fee, max-age, malformed policy and halt tests must remain green.
+
+**5. Test plan:** test-first pure statistical fixtures and restart integration against independent
+uninterrupted runs. Inject a crash after event insertion before checkpoint commit; assert no
+duplicate/missing fills. Tamper with state checksum, dataset, settings and policy. Verify halt
+and peak persist even when prices recover. Test 0-trade days, 29/30-day boundaries, partial
+days, inconsistent timestamps and serialized daily-state restoration. CLI integration is the
+Python E2E; cockpit assertions check actual rendered metrics without calling an external browser.
+
+**6. Failure/scalability:** checkpoints overwrite one small state row, not full history. Buffered
+lookback and daily running moments are bounded. Dataset remains the existing in-memory replay
+input; no extra remote calls or DB service. SQLite transactions use FULL durability and rollback
+on exceptions; file lock held across replay lifetime. Disk/full/corrupt input fails explicitly.
+Future network policy calls may repeat after an uncommitted batch and need durable response
+deduplication before they are enabled. Closed experiments never reopen for learning.
+
+**7. Security / rollback:** read JSON only; validate types, finiteness, counts, pending actions,
+position shape and accounting against the last closed candle. Preserve all source journals.
+Legacy completed journals remain readable; resumability requires the new checkpoint schema.
+Rollback code leaves journals/checkpoints intact for forward-compatible recovery; no resets.
+No new authentication, hosting or paid dependencies. Secrets never enter checkpoint state.
+
+**8. Enforcement limits:** this protects offline simulated accounting, not external side effects.
+Policy implementations remain trusted local code and must explicitly serialize all their state.
+Checksums detect corruption, not an authorized attacker rewriting both data and checksums.
+Intrabar drawdown and execution realism remain limited. Daily Sharpe cannot establish learned
+edge; teacher/memory, controls, comparison studies and forward paper trading remain unfinished.
+
+**Verification evidence (2026-09-30):** 124 tests passed and 17 pre-existing sensory tests
+remain expected failures; ruff and strict mypy (45 files) passed. Focused tests first failed
+on missing recovery/daily support. Review added a failing multi-symbol ordering case: JSON
+restoration reordered positions, changing exit event order. Canonical symbol ordering now
+preserves both accounting and exact event parity. CLI tests resume in a fresh process;
+injected fill interruption rolls back without duplicate execution. Daily results are checked
+against independently calculated sample statistics, including overflow and unavailable scores.
+No external inference, real-market experiment, hosting or trading was run in this increment.
+The local cockpit is regenerated from the two existing April archives only; daily statistics
+for those old archives remain honestly unreported. Browser visual verification is still pending.
 
 ### 2026-09-30: Jev access and USD 3/month AI budget
 

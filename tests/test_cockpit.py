@@ -70,6 +70,8 @@ def test_replay_journal_report_preserves_marked_equity_and_escapes_text(tmp_path
     assert "<script>alert" not in page
     assert "&lt;script&gt;" in page
     assert "Closed trades" in page
+    assert "Complete UTC days" in page
+    assert "fewer than 30 complete days" in page
     assert path.read_bytes() == before
 
 
@@ -83,6 +85,40 @@ def test_incomplete_and_missing_journal_fail_without_creating_files(tmp_path: Pa
     journal.close()
     with pytest.raises(ValueError, match="completed"):
         load_journal(path)
+
+
+@pytest.mark.parametrize("days,score,reason,valid", [
+    (30, 1.25, None, True),
+    (30, None, "zero_variance", True),
+    (29, 1.25, None, False),
+    (30, float("inf"), None, False),
+    (30, None, None, False),
+])
+def test_daily_score_is_read_from_summary_and_validated(
+    tmp_path: Path, days: int, score: float | None, reason: str | None, valid: bool,
+) -> None:
+    path = tmp_path / "metrics.sqlite"
+    journal = Journal(path)
+    journal.record({"kind": "START", "time": 0, "settings": {"fee": 0, "slippage": 0}})
+    journal.record({"kind": "EQUITY", "time": 30 * 86400, "equity": 1100})
+    # Deliberately write raw JSON to include a corrupt nonfinite fixture.
+    journal.connection.execute("INSERT INTO events(payload) VALUES (?)", (json.dumps({
+        "kind": "RESULT", "time": 30 * 86400, "starting_equity": 1000,
+        "ending_equity": 1100, "max_drawdown": 0, "closed_trades": 0,
+        "open_positions": 1, "halted": False, "daily_sharpe": score,
+        "complete_days": days, "sharpe_unavailable_reason": reason,
+    }),))
+    journal.connection.commit()
+    journal.close()
+    if not valid:
+        with pytest.raises(ValueError):
+            load_journal(path)
+    else:
+        run = load_journal(path)
+        assert run.daily_sharpe == score
+        assert run.complete_days == days
+        page = render([run])
+        assert "1.25" in page if score is not None else "zero variance" in page
 
 
 def test_invalid_numbers_are_rejected(tmp_path: Path) -> None:

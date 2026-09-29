@@ -29,6 +29,9 @@ class Run:
     equity: list[tuple[int, float]]
     details: list[str]
     note: str
+    daily_sharpe: float | None = None
+    complete_days: int | None = None
+    sharpe_unavailable_reason: str = "Not reported"
 
     @property
     def net_return(self) -> float:
@@ -152,6 +155,21 @@ def load_journal(path: Path) -> Run:
     if points[-1] != final_point:
         points.append(final_point)
     settings = start["settings"]
+    days = count(result["complete_days"]) if "complete_days" in result else None
+    sharpe = number(result["daily_sharpe"]) if result.get("daily_sharpe") is not None else None
+    reasons = {
+        "fewer_than_30_complete_days": "fewer than 30 complete days",
+        "zero_variance": "daily returns have zero variance",
+    }
+    reason = result.get("sharpe_unavailable_reason")
+    if days is not None:
+        if sharpe is not None and (days < 30 or reason is not None):
+            raise ValueError("Daily Sharpe disagrees with sample length or availability")
+        if sharpe is None and (reason not in reasons or
+                               (reason == "fewer_than_30_complete_days") != (days < 30)):
+            raise ValueError("Missing or inconsistent daily Sharpe explanation")
+    elif sharpe is not None:
+        raise ValueError("Daily Sharpe requires a recorded sample length")
     return Run(
         policy, path.name, "Offline replay", f'{date(start["time"])} → {date(result["time"])}',
         number(result["starting_equity"], minimum=0.01),
@@ -163,8 +181,12 @@ def load_journal(path: Path) -> Run:
         f'{total_points:,} recorded equity samples; {len(points):,} displayed. '
         'Last 50 decision/execution records shown. Ending equity includes open positions; '
         'future liquidation and AI operating costs are excluded. '
-        'Daily Sharpe and learning comparisons are not available yet. '
+        'Daily Sharpe uses complete UTC days, sample standard deviation, zero risk-free '
+        'return and sqrt(365) annualization; partial days are excluded. '
+        'At least 30 complete days are required to display this descriptive statistic. '
+        'Learning comparisons are not available yet. '
         f'Run ended with risk halt: {"yes" if result["halted"] else "no"}.',
+        sharpe, days, reasons.get(str(reason), "Not reported"),
     )
 
 
@@ -201,6 +223,10 @@ def render(runs: list[Run]) -> str:
             ("Win rate", f"{run.win_rate:.1%}" if run.win_rate is not None else "Not available"),
             ("Open positions", str(run.open_positions) if run.open_positions is not None
              else "Not reported"),
+            ("Complete UTC days", str(run.complete_days) if run.complete_days is not None
+             else "Not reported"),
+            ("Daily Sharpe", f"{run.daily_sharpe:.2f}" if run.daily_sharpe is not None
+             else run.sharpe_unavailable_reason),
         ]
         cards = "".join(f'<div><dt>{escape(k)}</dt><dd>{escape(v)}</dd></div>' for k, v in metrics)
         records = "".join(f"<li>{escape(row)}</li>" for row in run.details)
@@ -223,4 +249,3 @@ def render(runs: list[Run]) -> str:
     generated = datetime.now(UTC).strftime("%d %b %Y · %H:%M UTC")
     template = Path(__file__).with_name("template.html").read_text(encoding="utf-8")
     return template.replace("{{generated}}", generated).replace("{{runs}}", body)
-

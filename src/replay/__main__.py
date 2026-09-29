@@ -6,6 +6,7 @@ import argparse
 import csv
 import hashlib
 import json
+import sys
 from dataclasses import asdict
 from pathlib import Path
 
@@ -15,6 +16,15 @@ from src.replay.journal import Journal
 
 class BreakoutBaseline:
     """Fixed comparison policy, NOT an AI apprentice or a recommended strategy."""
+
+    checkpoint_id = "breakout-baseline-v1"
+
+    def save_state(self) -> dict[str, object]:
+        return {}
+
+    def restore_state(self, state: dict[str, object]) -> None:
+        if state:
+            raise ValueError("The fixed baseline has no mutable policy state")
 
     def decide(self, observation: Observation) -> Decision:
         bars = observation.candles
@@ -37,21 +47,30 @@ def main() -> None:
     parser.add_argument("--balance", type=float, default=1000)
     parser.add_argument("--fee", type=float, default=0.001)
     parser.add_argument("--slippage", type=float, default=0.001)
+    parser.add_argument("--resume", action="store_true",
+                        help="Resume this journal with the same data, settings and policy")
+    parser.add_argument("--stop-after", type=int,
+                        help="Pause after this many additional candle batches")
     args = parser.parse_args()
+    if args.stop_after is not None and args.stop_after <= 0:
+        parser.error("--stop-after must be positive")
     settings = Settings(args.balance, args.interval, args.fee, args.slippage)
     with args.csv.open(newline="") as source:
         candles = [Candle(row["symbol"], int(row["opened_at"]),
                           *[float(row[k]) for k in ("open", "high", "low", "close", "volume")])
                    for row in csv.DictReader(source)]
-    journal = Journal(args.journal)
+    journal = Journal(args.journal, resume=args.resume)
     try:
-        digest = hashlib.sha256(args.csv.read_bytes()).hexdigest()
-        journal.record({"kind": "MANIFEST", "sha256": digest,
-                        "policy": "breakout-baseline-v1", "simulation": "coarse-candles-v1"})
-        result = Replay(settings, journal).run(candles, BreakoutBaseline())
+        if not args.resume:
+            digest = hashlib.sha256(args.csv.read_bytes()).hexdigest()
+            journal.record({"kind": "MANIFEST", "sha256": digest,
+                            "policy": "breakout-baseline-v1", "simulation": "coarse-candles-v1"})
+        result = Replay(settings, journal).run(candles, BreakoutBaseline(),
+                                              resume=args.resume, stop_after=args.stop_after)
         print(json.dumps(asdict(result), indent=2, allow_nan=False))
     except Exception as exc:
-        journal.record({"kind": "FAILED", "error": str(exc)})
+        # Never append past the last checkpoint after a failed/rejected resume.
+        print(f"Replay stopped: {exc}. Last committed checkpoint preserved.", file=sys.stderr)
         raise
     finally:
         journal.close()
