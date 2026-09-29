@@ -2,6 +2,9 @@
 
 Read [the single reference plan](docs/active/APPRENTICE_TRADER_PLAN.md) first.
 2026-09-23: Daniel explicitly authorized implementation. Build and verify offline replay and paper-only foundations. Deployment, unattended workers, paid API calls and real trading still require separate authorization.
+2026-09-30: Daniel supplied a TypeSafe token and authorized a total AI budget of USD 3/month.
+Paid Jev calls are permitted only through the persistent budget guard. This does not authorize
+deployment, unattended operation or real trading. Never print credentials or put them in Git.
 
 The reference plan supersedes the April five-layer architecture and its task queue. User-approved limits are recorded there; proposed defaults are labeled separately.
 The offline replay enforces admission limits; the legacy Freqtrade runtime does not. Read the plan's implementation limitations before extending either.

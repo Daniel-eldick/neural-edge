@@ -32,11 +32,11 @@ This file is the single active project reference. Other status pages are navigat
 | Learning | Staged: memory, then strategy-selection weights, then rules |
 | Historical screening | Net profit, annualized Sharpe > 1, maximum drawdown < 10% |
 | Operating goal | Background operation, eventually minimal weekly review |
-| Current authorization | Implementation and local verification; no deployment, paid inference or real trading |
+| Current authorization | Implementation and local verification; AI inference capped at USD 3/month (2026-09-30); no deployment or real trading |
 
 The proposed 1.5% aggregate cap was NOT accepted; preserve 2.5%.
 The recommendation to defer scalping was NOT accepted as a scope deletion. Retain it as a separate milestone requiring better execution evidence.
-Live capital, shorting, leverage, paid services and deployment are not authorized.
+Live capital, shorting, leverage, paid services beyond the USD 3/month AI allowance, and deployment are not authorized.
 
 ## 3. Repository review: actual state
 
@@ -238,7 +238,8 @@ Weekly review is an eventual operating goal after stabilization, not a guarantee
 No additional conceptual questionnaire is needed. Before spending or launching, resolve:
 - Simulated capital and intended eventual capital (not yet selected by the user).
 - Venue/data availability and permitted use.
-- Model credentials, budget ceiling, host and alert destination.
+- TypeSafe credentials and a USD 3/month AI ceiling are now supplied (2026-09-30).
+  Other provider credentials, host and alert destination remain unresolved.
 - Whether to stage the scalping milestone later; it remains requested scope.
 - Exact evaluation dates, evidence thresholds and emergency liquidation policy.
 
@@ -264,6 +265,69 @@ The initial documentation handoff used link/path and scope checks. Implementatio
 Source links support platform context. They do not establish that the apprentice will earn money. Curriculum selection and engine integration remain future work.
 
 ## Progress log
+
+### 2026-09-30: Jev access and USD 3/month AI budget
+
+Daniel saved the TypeSafe token locally and approved USD 3 per month for AI inference.
+He prefers an online cockpit with free hosting. The token was accepted by TypeSafe's
+read-only `/v1/models` endpoint (HTTP 200); it was not printed or committed.
+
+**Increment: budgeted Jev connector — implemented and verified (2026-09-30). Tier: Full (persistent spending state).**
+This is a connection and accounting boundary, not a finished trader, teacher or learning loop.
+The existing offline replay and risk limits remain unchanged. No historical validation or
+holdout is consumed. No deployment or unattended process is started.
+
+1. **Purpose:** prevent local AI inference from exceeding the approved monthly allowance.
+2. **Design:** one shared SQLite ledger at `user_data/ai/budget.sqlite`, UTC calendar months,
+   integer nano-USD accounting, USD 3 cap. Initialize explicitly once; an absent/corrupt ledger
+   subsequently fails closed. Each call reserves USD 0.003 in a committed `BEGIN IMMEDIATE`
+   transaction before network I/O. Concurrent processes share that ledger. Successful calls
+   settle to reported input tokens × USD 0.042/million. Failed/ambiguous calls keep the full
+   reservation, with no automatic retries or redirects. Pin `jev-1.13.0`; pricing verified
+   2026-09-30 and expires for new calls after 2026-10-31 until reviewed. Published maximum
+   context is 64k tokens, so USD 0.003 covers 65,536 tokens at the verified rate. Output is free.
+   Unexpected model/usage or invalid answers fail closed. Spending through other applications
+   is outside this ledger; future trader/teacher providers must join the same guard before use.
+3. **Tasks / tests:**
+   - [x] Write failing tests for cap boundaries, concurrency, restart, UTC rollover, missing
+     ledger, retained timeout reservations, strict response validation and secret redaction.
+   - [x] Implement durable shared accounting and a narrow Jev Choice connector using the
+     existing `requests` and `python-dotenv` dependencies.
+   - [x] Add explicit budget initialization/status/connection-check CLI; run one harmless live
+     inference after the tests pass, recording model, input tokens and accounted cost only.
+   - [x] Update docs and rerun the full quality gate. Publish this increment to the existing feature PR.
+   Scope guard: four tasks; re-plan above six. No trading policy adapter in this increment.
+4. **Files:** `src/agents/budget.py`, `src/agents/jev.py`, package initializer,
+   `tests/test_ai_budget.py`, `tests/test_jev.py`, `.env.example`, `.gitignore`, README,
+   AGENTS and this plan. Sensitive ledger is ignored; `.env.local` stays ignored and private.
+5. **Verification:** hand-calculated costs, contention at the last reservation, second process
+   seeing previous spending, no network request after cap/expired pricing, corrupt responses
+   do not escape as decisions, no key/request headers in errors, CLI smoke uses no market data.
+   Integration tests use recorded-response fixtures. Full ruff/mypy/pytest gate required.
+6. **Failure/scalability:** transaction lock only around reservations/settlement; network I/O
+   outside locks; fixed request/response bounds and finite timeouts; no retries. SQLite failure
+   blocks calls. Small inference workload at USD 3/month bounds ledger growth; no DB service,
+   schema-wide migration, N+1 remote calls or connection pool required.
+7. **Security/rollback:** token read only from process environment or local `.env.local`, sent
+   only to the fixed HTTPS TypeSafe endpoint; transport exceptions are sanitized. Rollback
+   disables connector code but preserves ledger and reservations. Budget cap cannot be raised
+   by runtime flags. Normal code/ledger editing is trusted; this is not account-level billing
+   enforcement. Paid work in other tools is not covered.
+8. **Limits:** invoice/tax adjustments and provider price changes are not under local control;
+   expiry forces periodic price review. Historical model confidence is not trading calibration.
+   Jev integration into the replay policy, teacher/memory and authenticated online cockpit
+   remain next milestones. Accepted temporary limitation: unresolved requests consume the
+   full reservation, which may stop calls early but must never cause optimistic overspending.
+
+Source: [TypeSafe model pricing and context limits](https://docs.typesafe.ai/models).
+
+Evidence: 15 new tests first failed because the connector package did not exist, then passed
+with implementation. Full gate: ruff clean; mypy clean across 42 files; **97 passed / 17
+pre-existing expected failures**. A single harmless real inference returned `paper` from
+`jev-1.13.0`, with 337 input tokens and USD 0.000014154 accounted cost. No unresolved cost
+reservation remains. The request contained a paper-mode connection-check sentence, not market
+history or private trading evidence. Only sanitized metadata was displayed. This verifies
+connectivity and billing plumbing; it does not connect Jev to the trading loop.
 
 ### 2026-09-29 continuation: one cockpit and measured learning
 

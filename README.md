@@ -38,3 +38,33 @@ Missing, corrupt, failed or incomplete runs fail explicitly rather than showing 
 success. The journal chart samples at most approximately 1,000 observations; its displayed
 range is not a substitute for the run's drawdown statistic. Decision details show the last
 50 records. No saved API configuration is included in the page.
+
+## Jev connection and AI allowance
+
+Daniel approved **USD 3 total AI inference per UTC calendar month** on 2026-09-30.
+Put the private token in the ignored `.env.local` as `TYPESAFE_API_KEY=...` or provide it
+through the process environment. Never put it in chat, a command argument, or Git.
+
+```bash
+# One-time initialization. Refuses to replace an existing ledger.
+.venv/bin/python -m src.agents.jev --init-budget
+# Local accounting only; makes no API call.
+.venv/bin/python -m src.agents.jev --status
+# One harmless paid connection check, covered by the allowance.
+.venv/bin/python -m src.agents.jev --check
+```
+
+The connector pins `jev-1.13.0`. Each request reserves $0.003 in the shared local
+`user_data/ai/budget.sqlite` before contacting TypeSafe, then settles successful validated
+responses at $0.042 per million reported input tokens (output tokens free). Failed or
+ambiguous requests keep the full reservation; there are no automatic retries. Missing,
+corrupt or exhausted accounting blocks new calls. Do not delete or replace the ledger:
+it is the spending record shared by all local runs, and future model providers must use it.
+
+Pricing was verified 2026-09-30. New calls stop on 2026-11-01 until pricing is reviewed.
+The application guard covers calls made through this connector, not API spending in other
+applications, taxes or provider-side billing changes. It is not a TypeSafe account-level cap.
+
+The connection is verified; no trading policy calls Jev yet. The teacher, learned memory,
+daily performance evaluation and online cockpit controls remain pending. A connection-check
+answer is not a trading result or evidence of profitable decisions.
