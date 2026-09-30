@@ -377,6 +377,54 @@ Source links support platform context. They do not establish that the apprentice
 
 ## Progress log
 
+
+### 2026-09-30: opportunity screen v1 — protocol fixed before acquisition (0/4)
+
+Bounded continuation of Daniel's “keep going”: evaluate the cost of abstention using unchanged
+context+memory and memory-only Jev. Study ID `opportunity-screen-v1`. This extends the previous
+falling-period screen; it does not authorize tuning, model training, automated operation or promotion.
+
+**Predeclared data:** BTC/USDT 5m, four UTC start-inclusive/end-exclusive windows:
+2024-02-10→2024-02-12, 2024-05-10→2024-05-12, 2024-08-10→2024-08-12,
+2024-11-10→2024-11-12. Fixed dates once per calendar quarter, chosen before downloading or
+viewing their prices. No claim these will rise. Two-day windows bound inference work; 576 bars
+with first21 warmup. Daily history starts 2023-12-01, 2024-03-01, 2024-06-01 and 2024-09-01,
+respectively, and ends at the associated test end. Official monthly 5m and 1d archives plus
+checksums; validate full months, continuity and every replay day's OHLCV reconciliation.
+
+**Frozen execution:** runtime and evaluation at `44287a5`; one baseline, memory-only and
+context+memory run per window, in that order and chronological window order. Model, prompts,
+cutoffs, rules and costs unchanged. Separate 1000-USDT accounts, .001 fee/side and .001 adverse
+slippage, 2% stop/4% target, existing 0.5% trade risk/2.5% aggregate/24h exit constraints.
+Memory starts empty; 2026 teaching material unavailable. Only source closed before each decision
+is exposed; response stores retain exact requests. No shared cross-window memory or compounding.
+Raw prior20 breakout candidate bound must be <=100 before either paid variant runs; otherwise
+skip the paid pair and report the window infeasible. No replacement dates, shortened windows,
+higher call limits, retries, reruns, prompt changes or tuning. Stop remaining paid runs on provider
+failure, policy errors, incomplete replay or evidence inconsistency; preserve partial evidence.
+
+**Budget:** four windows × two variants × 100 calls × USD .003 reservation = USD 2.40 maximum
+reservations, within current USD 2.931025164 remaining. Existing shared USD3/month ledger is
+mandatory and unchanged. Require no pending reservations before starting and reconcile exact
+nano-USD receipts against ledger delta afterward. No paid infrastructure changes.
+
+**Analysis fixed in advance:** report all attempted windows, net return after trading costs,
+sampled drawdown, closed/open trades, decisions, reviewed cases, memory-exposed choices and
+AI costs. Compare context versus memory (percentage points), baseline, cash and buy-and-hold.
+Explicit opportunity gaps = context return minus baseline and context return minus buy-and-hold;
+negative means lagging that reference. Buy-and-hold uses greater full-allocation exposure without
+agent stops/holding limits: its gap is descriptive, not attainable foregone profit. Report realized
+window direction without replacing unfavorable or inconclusive samples. No significance, learned
+edge, cycle recognition or promotion claim from eight days. Prompt/content confounding, model
+pretraining and historical-feed revisions remain unresolved. Do not pool returns as a portfolio.
+
+**Acceptance and deliverables:** (1) committed protocol before acquisition; (2) checksummed data,
+full candidate coverage and no errors for eligible runs; (3) exact receipt/budget/source/artifact
+reconciliation and complete research report; (4) publish all earlier plus new evidence in the
+private cockpit, verify authenticated HTML bytes, mobile/desktop interactions and anonymous
+protection, update docs and the existing draft PR. Full source quality gate before commits;
+no new source/test changes planned. Preserve completed evidence and journal hashes.
+
 ### 2026-09-30: context comparison screen v1 — complete / all-context abstention
 
 #### 1. What / why
