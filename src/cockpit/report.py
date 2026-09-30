@@ -8,11 +8,22 @@ import re
 import sqlite3
 import zipfile
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from html import escape
 from pathlib import Path
 from typing import Any
+
+from src.cockpit.visuals import dashboard
+
+
+@dataclass(frozen=True)
+class Activity:
+    time: int
+    kind: str
+    symbol: str
+    price: float
+    profit: float | None = None
 
 
 @dataclass
@@ -37,6 +48,14 @@ class Run:
     model_choices: int | None = None
     policy_errors: int | None = None
     inference_cost_usd: float | None = None
+    started_at: int | None = None
+    ended_at: int | None = None
+    symbols: tuple[str, ...] = ()
+    daily_returns: list[tuple[int, float]] = field(default_factory=list)
+    close_drawdowns: list[tuple[int, float]] = field(default_factory=list)
+    activity: list[Activity] = field(default_factory=list)
+    choice_counts: dict[str, int] = field(default_factory=dict)
+    halted: bool | None = None
 
     @property
     def net_return(self) -> float:
@@ -112,6 +131,11 @@ def load_journal(path: Path) -> Run:
     policy = "Unspecified policy"
     dataset_hash: str | None = None
     points: list[tuple[int, float]] = []
+    peaks: list[float] = []
+    peak = 0.0
+    daily_returns: deque[tuple[int, float]] = deque(maxlen=366)
+    activity: deque[Activity] = deque(maxlen=6)
+    choice_counts: dict[str, int] = {}
     details: deque[str] = deque(maxlen=50)
     wins = exits = 0
     model_choices = policy_errors = 0
@@ -141,16 +165,34 @@ def load_journal(path: Path) -> Run:
                 result = event
             elif last_kind == "EQUITY":
                 final_point = (count(event["time"]), number(event["equity"], minimum=0))
+                peak = max(peak, final_point[1])
                 if total_points % stride == 0:
                     points.append(final_point)
+                    peaks.append(peak)
                 total_points += 1
                 if len(points) > 1000:
                     points = points[::2]
+                    peaks = peaks[::2]
                     stride *= 2
+            if last_kind == "DAILY_RETURN":
+                timestamp = count(event["time"])
+                if timestamp % 86400 or (daily_returns and timestamp <= daily_returns[-1][0]):
+                    raise ValueError("Daily returns need ordered UTC boundaries")
+                daily_returns.append((timestamp, number(event["net_return"])))
+            if last_kind in {"ENTER", "EXIT"}:
+                activity.append(Activity(
+                    count(event["time"]), last_kind, str(event["symbol"]),
+                    number(event["price"], minimum=0),
+                    number(event["net_profit"]) if last_kind == "EXIT" else None,
+                ))
             if last_kind == "EXIT":
                 exits += 1
                 wins += number(event["net_profit"]) > 0
             if last_kind == "MODEL_CHOICE":
+                choice = event["choice"]
+                if choice not in {"enter", "wait"}:
+                    raise ValueError("Unrecognized model choice")
+                choice_counts[choice] = choice_counts.get(choice, 0) + 1
                 model_choices += 1
                 inference_nano_usd += count(event["cost_nano_usd"])
                 details.append(
@@ -175,6 +217,7 @@ def load_journal(path: Path) -> Run:
         raise ValueError("Recorded ending equity disagrees with final equity event")
     if points[-1] != final_point:
         points.append(final_point)
+        peaks.append(peak)
     settings = start["settings"]
     days = count(result["complete_days"]) if "complete_days" in result else None
     sharpe = number(result["daily_sharpe"]) if result.get("daily_sharpe") is not None else None
@@ -218,6 +261,12 @@ def load_journal(path: Path) -> Run:
         sharpe, days, reasons.get(str(reason), "Not reported"),
         comparison_key, model_choices, policy_errors,
         inference_nano_usd / 1e9 if inference_known else None,
+        count(start["time"]), count(result["time"]),
+        tuple(str(symbol) for symbol in start.get("symbols", [])),
+        list(daily_returns),
+        [(t, 1 - value / max(number(result["starting_equity"], minimum=0.01), high))
+         for (t, value), high in zip(points, peaks, strict=True)],
+        list(activity), choice_counts, bool(result["halted"]),
     )
 
 
@@ -277,60 +326,7 @@ def render(runs: list[Run]) -> str:
     overview = ('<article><h2>No saved runs yet</h2>'
                 '<p>Import a completed backtest to begin.</p></article>')
     if selected is not None:
-        run = selected
-        cost = f"${run.inference_cost_usd:.4f}" if run.inference_cost_usd is not None else "Unknown"
-        positions = str(run.open_positions) if run.open_positions is not None else "unknown"
-        overview = (
-            '<section class="overview" aria-label="Selected experiment">'
-            '<div class="section-heading"><div><span class="eyebrow">Selected backtest</span>'
-            f'<h2>{escape(display_name(run))}</h2></div>'
-            f'<span class="period">{escape(run.period)}</span></div>'
-            + metric_cards([
-                ("Trading return", f"{run.net_return:+.2%}"),
-                ("Biggest dip", f"{run.drawdown:.2%}"),
-                ("Closed trades", str(run.closed_trades)),
-                ("AI cost · this run", cost),
-            ])
-            + '<div class="metric-note">Trading fees included · AI cost separate (USD)</div>'
-            + coverage_warning(run)
-            + '<div class="dashboard-grid"><article class="performance">'
-            '<div class="section-heading"><h3>Account value</h3>'
-            f'<span class="balance">{run.ending_equity:,.2f} <small>USDT</small></span></div>'
-            f'<p class="muted">Started at {run.starting_equity:,.2f} USDT · '
-            f'Open positions: {positions}</p>'
-            + chart(run)
-            + '</article><article class="growth"><h3>Agent progress</h3>'
-            '<ol class="milestones"><li><span class="step done">✓</span>'
-            '<div><strong>Connected</strong><span>Jev can evaluate setups</span></div></li>'
-            '<li><span class="step current">2</span><div><strong>Testing</strong>'
-            '<span>Early backtests · no proven edge</span></div></li>'
-            '<li><span class="step">3</span><div><strong>Learning</strong>'
-            '<span>Teacher &amp; memory not active</span></div></li></ol>'
-            '<p class="next-step"><span>Next milestone</span>Teach, then test on unseen data.</p>'
-            '</article></div></section>'
-        )
-        matching = [other for other in runs if run.comparison_key is not None
-                    and other.comparison_key == run.comparison_key]
-        if len(matching) > 1:
-            rows = []
-            for other in matching:
-                label = escape(display_name(other))
-                if other.policy_errors:
-                    label += ' <span class="tag">Incomplete</span>'
-                rows.append(
-                    f'<tr><th scope="row">{label}</th><td>{other.net_return:+.3%}</td>'
-                    f'<td>{other.drawdown:.3%}</td><td>{other.closed_trades}</td></tr>'
-                )
-            overview += (
-                '<article class="compare"><div class="section-heading">'
-                '<h3>How does it compare?</h3>'
-                '<span class="muted">Same data &amp; costs</span></div>'
-                '<div class="comparison"><table><thead><tr><th scope="col">Strategy</th>'
-                '<th scope="col">Return</th><th scope="col">Biggest dip</th>'
-                '<th scope="col">Trades</th></tr></thead><tbody>' + ''.join(rows)
-                + '</tbody></table></div>'
-                '<p class="muted">One experiment. Improvement is not yet proven.</p></article>'
-            )
+        overview = dashboard(selected, runs)
     sections = []
     for index, run in enumerate(runs, start=1):
         metrics = [
@@ -405,6 +401,9 @@ def render(runs: list[Run]) -> str:
         'Saved results do not monitor a running agent.</p>'
         '</div></details>'
     ) if runs else ''
-    generated = datetime.now(UTC).strftime("%d %b %Y · %H:%M UTC")
+    generated_at = datetime.now(UTC)
+    generated = generated_at.strftime("%d %b %Y · %H:%M UTC")
     template = Path(__file__).with_name("template.html").read_text(encoding="utf-8")
-    return template.replace("{{generated}}", generated).replace("{{runs}}", overview + evidence)
+    return (template.replace("{{generated}}", generated)
+            .replace("{{generated_iso}}", generated_at.isoformat())
+            .replace("{{runs}}", overview + evidence))

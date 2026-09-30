@@ -3,10 +3,10 @@
 Verified 2026-09-30. This hosts a dated results snapshot only. Trading, teacher/memory,
 background execution, controls and automatic publishing are not hosted here.
 
-- [Open cockpit](https://neural-edge-cockpit-n7m5x9tlh-daniel-eldicks-projects.vercel.app) — sign in with the Vercel account that owns the project.
+- [Open cockpit](https://neural-edge-cockpit-6wkzon4c2-daniel-eldicks-projects.vercel.app) — sign in with the Vercel account that owns the project.
 - [Manage project](https://vercel.com/daniel-eldicks-projects/neural-edge-cockpit)
 - Scope: `daniel-eldicks-projects`; project: `prj_sphrTaxgCiGWvkTZhtzQ8GtUCcj2`.
-- Preview: `dpl_AXiNNG5NAVmPh7cTDBM4KZt6hfaG`; READY, preview target, no aliases.
+- Preview: `dpl_2ynMHRtaXrKzjS7tdG9M1mAwk3Nn`; READY, preview target, no aliases.
 - Authentication: standard Vercel protection, `prod_deployment_urls_and_all_previews`.
 - Uses the existing Pro account, with no plan upgrade, add-on, functions or database.
   Static hosting consumes the account's normal usage allowance; this is not a separate
@@ -38,7 +38,12 @@ background execution, controls and automatic publishing are not hosted here.
 7. Update the cockpit links in README and this guide to the verified preview URL. Inspect
    desktop/mobile layout after browser login. Browser refresh alone does not regenerate data.
 
-Current access checks passed; layout inspection remains pending browser login. Vercel injects
+Current access and visual checks passed at 1440px desktop, 820px tablet and 390px phone widths.
+Authenticated browser automation reused the existing Vercel project automation credential in
+memory, restricted its request header to this deployment origin, and blocked other origins.
+No credential was printed, saved in screenshots or placed in a shared URL. Normal browser
+access still requires the owner to sign in. Chart radio controls (click and keyboard),
+expanded evidence, no horizontal overflow and no browser errors were verified. Vercel injects
 its toolbar by default, which our CSP blocks. The documented test header suppresses toolbar
 injection for byte comparison without weakening authentication or CSP.
 

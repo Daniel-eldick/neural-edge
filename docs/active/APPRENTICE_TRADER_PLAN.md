@@ -327,6 +327,97 @@ Source links support platform context. They do not establish that the apprentice
 
 ## Progress log
 
+### 2026-09-30: visual cockpit — complete / browser-verified
+
+**Tier: Standard.** Read-only reporting and presentation; existing journal schema, trading,
+provider calls, hosting authentication and runtime remain unchanged. Daniel explicitly asked
+for more visuals/graphs/timestamps and a considered UX/UI rebuild. Existing hosting scope applies.
+
+#### 1. What and why
+Replace text-heavy cards with a visual research workspace. Distinguish historical simulation
+time from snapshot publication time. Show genuine decision coverage and performance, never
+invent live activity, teacher progress, future milestones dates or a learning score.
+
+#### 2. Solution / UX brief
+Daniel scans on desktop or phone: status → chart versus baseline → day/decision breakdown →
+dated trade activity → optional precise evidence. Preserve data-driven warning and no-live badge.
+```
+NE / Cockpit                    Saved snapshot [UTC timestamp]
+Jev / Research                  Historical window [start → end UTC]
+[Return] [Biggest dip] [Trades] [AI spend]
+[Performance / Account value ⇄ Return vs baseline      ] [Decision donut]
+[Daily return bars with day labels] [Drawdown area     ] [Trade timeline]
+[Connected — Testing — Learning pending; evidence dates where known]
+[All experiments & evidence ▸]
+```
+Accessible CSS radio controls switch chart views; native titles label plotted values. No JS
+or charting dependency. SVG grids, axes, zero lines, labels and legends distinguish series
+without relying only on color. Focus styles, native disclosures, minimum 44px controls.
+At mobile widths charts stack, cards form two columns, activity remains visible below.
+Missing data produces an explicit empty graphic; timestamps are UTC. No artificial time filters.
+Reuse report dataclasses, native details, palette tokens and deterministic escaped SVG.
+Heuristics: visibility via two time domains/status/warnings; forgiveness via read-only controls;
+minimalism via graphics + brief labels; consistency via shared axes/tokens; context via mobile
+layouts; recovery via existing import errors; speed via default chart; learnability via legends.
+
+#### 3. Tasks and tests (scope: four tasks; reassess above six)
+1. Extend read-only import with DAILY_RETURN events, structured trade activity and recorded
+   choice counts. First write tests matching hand-calculated returns, timestamps, counts,
+   immutable source bytes and unavailable legacy data.
+2. Build SVG visualization helpers and visual overview. Tests require only matching inputs
+   overlaid, truthful absent charts, escaped labels and correct zero/negative chart behavior.
+3. Redesign responsive layout and native chart switching. Verify desktop/mobile screenshots,
+   no horizontal overflow, focus/keyboard/tab switching and expanded evidence.
+4. Full ruff/mypy/pytest, regenerate existing journals only, private preview deployment,
+   anonymous denial/authenticated content verification, handoff/PR update.
+
+#### 4. Files / blast radius
+`src/cockpit/report.py`: read-only import/render (medium); `visuals.py`: new SVG presentation
+(medium); `template.html`: responsive UI (low); cockpit tests (regression). README, this plan
+and hosting guide track evidence/URL. No engine/journal schema/locked evaluator changes.
+
+#### 5. Verification / failure modes
+Unit and integration tests use existing pytest; screenshot and DOM checks use bundled browser
+runtime if agent-browser CLI unavailable. No new production dependency. Chart dates/amounts
+must match recorded events. Daily bars use exact recorded DAILY_RETURN (never sampled curve).
+Equity lines stay sampled and labeled; no unsupported intrabar drawdown series. Unknown model
+choices fail rather than becoming WAIT. Activity shows last 6 recorded fills, not fabricated
+execution timestamps or system wall-clock events. Record chart aggregate scope explicitly.
+SVG coordinates bounded; source labels escaped; no config/credentials uploaded. Whole journal
+read once; points/activity/daily samples bounded. Legacy missing data stays unavailable.
+Existing landmine file has no entries; hosting-specific first-deploy behavior remains in guide.
+
+#### 6. Rollback
+Restore prior report/template and previous private preview. Local journals/budget untouched.
+Account protection stays enabled. No launch of worker, teacher or paid inference.
+
+#### Completion evidence
+All four tasks completed. Full gate: ruff clean; mypy clean across 53 files; **161 passed /
+17 pre-existing expected failures**. New tests first failed on absent visual fields, then
+verified recorded daily values/timestamps, source immutability, comparison isolation,
+flat/negative graphs, trade records, unknown-choice rejection and nonpositive drawdown axes.
+The unchanged historical pilot supplies 7 daily returns, 98 WAIT / 2 ENTER / 11 unavailable
+outcomes and 4 fills; these are historical market timestamps, not live activity. Full input
+journal hashes still match the pilot report. Daily history retains the last 366 events and
+shows at most 14; activity retains 6 fills. Close-drawdown peaks are computed before chart
+sampling and explicitly exclude unrecorded intrabar paths. Overall max drawdown remains the
+journal result. Same-input baseline is chosen by identity, never highest return.
+
+Authenticated Chromium checks passed at 1440×1050, 820×1100 and 390×844: no browser errors,
+no horizontal overflow (including expanded evidence), working click and keyboard chart
+switching. Desktop/mobile screenshots visually inspected; axes rounded to readable intervals,
+phone chart uses a narrower SVG, snapshot and market dates are separate, negative returns are
+not colored as gains. No JS, dependencies, model calls, runtime changes or auth weakening.
+The agent-browser CLI was unavailable; the bundled Playwright runtime handled verification.
+
+Final preview: https://neural-edge-cockpit-6wkzon4c2-daniel-eldicks-projects.vercel.app
+Deployment `dpl_2ynMHRtaXrKzjS7tdG9M1mAwk3Nn`: READY preview, no aliases. Anonymous
+HTTP 302; authenticated HTTP 200, restrictive headers and exact local/hosted HTML equality.
+HTML SHA256: `06f9d34460ca09f953df4d5d3523da33c45fde116757aa640cde215a0d6c7669`.
+Screenshots: ignored `user_data/cockpit/visual-cockpit-{desktop,tablet,mobile}.png`;
+DOM checks: `user_data/cockpit/browser-check.json`. The former previews remain rollback options.
+
+
 ### 2026-09-30: cockpit scan-first redesign — implemented and published
 
 Daniel explicitly asked for less reading and a more intuitive cockpit. This authorizes the
