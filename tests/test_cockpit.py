@@ -209,7 +209,7 @@ def test_overview_focuses_jev_not_the_best_return_and_keeps_warning_visible(tmp_
     assert overview.count("<dt>") == 4
     assert "Not live" in overview
     assert "Daily Sharpe" not in overview
-    assert "Teacher &amp; memory not active" in overview
+    assert "Ready · not used in this run" in overview
     assert "<details open" not in page
     assert "Recorded AI cost (USD)" in page
     assert "$0.009907590" in page

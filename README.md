@@ -6,7 +6,8 @@ Research project for an AI apprentice trader that learns selectively from histor
 
 Status: offline replay includes causal observations, simulated accounting, risk enforcement,
 restart recovery and daily performance reporting. Jev can filter simulated breakout candidates
-under the USD 3/month allowance. The broader AI trader, teacher and learning loop are still pending.
+under the USD 3/month allowance. An opt-in evidence teacher now reviews closed trades and
+provides causal, same-run memory to Jev. Improved performance is not yet demonstrated.
 The first [historical pilot](docs/research/BTC_WEEK_2024_06_PILOT.md) is complete, with
 incomplete Jev coverage after its predeclared attempt cap. Profitability remains unproven.
 
@@ -42,10 +43,11 @@ headline metrics, switchable return/account-value charts, a same-input baseline 
 return bars, a candle-close drawdown chart, decision breakdown and timestamped trade timeline.
 Full records and assumptions expand on demand. Market times are historical UTC; the snapshot
 generation time is separate. Daily bars read recorded daily returns, not a sampled equity curve.
-Incomplete evaluation warnings remain visible. It is a dated snapshot; the AI trading loop,
-teacher/memory, live connection status and start/pause controls are not connected yet.
+Incomplete evaluation warnings remain visible. Memory runs report reviewed trades, retrieval
+counts and the last review timestamp. The original pilot did not use memory. This remains a
+dated snapshot; live connection status, automatic updates and start/pause controls are pending.
 
-[Open the private online cockpit](https://neural-edge-cockpit-6wkzon4c2-daniel-eldicks-projects.vercel.app) and sign in with the Vercel account
+[Open the private online cockpit](https://neural-edge-cockpit-16pe3ge3m-daniel-eldicks-projects.vercel.app) and sign in with the Vercel account
 that owns this project. It uses your existing Vercel plan. Results update only when regenerated
 and redeployed. See [hosting and refresh instructions](docs/guides/COCKPIT_HOSTING.md).
 
@@ -135,7 +137,39 @@ old recovery contracts; retain the original revision if an experiment must be re
 
 The cockpit's decision records include model choices and successful inference costs; summary
 trading P&L excludes AI costs. Unresolved reservations remain in the authoritative budget ledger.
-The teacher, learned memory, controlled learning evaluation and online controls remain pending.
+Controlled learning evaluation, a generative teacher and online controls remain pending.
 One synthetic end-to-end check returned WAIT with one real Jev call (1,885 input tokens,
 $0.000079170). It verifies integration, not trading performance; it is excluded from the
 saved-market-results cockpit.
+
+
+## Evidence teacher and memory
+
+Use a fresh journal for the opt-in memory variant:
+
+```bash
+.venv/bin/python -m src.replay --csv candles.csv --journal user_data/ai/memory-run-001.sqlite --policy jev-memory --max-model-calls 20
+```
+
+This uses the same paid Jev connector, durable responses and monthly budget. The deterministic
+teacher itself makes no API calls. It pairs this run's completed trades, waits at least one
+replay interval after exit, then records a review. Jev receives the last six eligible cases
+for the same symbol, including losses, with candidate status and explicit uncertainty.
+Memory retains at most 64 cases; the journal preserves full evidence. Separate runs start
+empty. There is no rule promotion, model training or change to risk limits.
+
+Six original [curriculum cards](src/memory/curriculum.json) are separate from the
+[exercise answer keys](docs/curriculum/FOUNDATIONS.md). They are available only from
+2026-09-30 UTC; a 2024 replay receives none. Model pretraining contamination remains an
+unresolved historical-testing limitation.
+
+Pause/resume uses `--policy jev-memory` and the identical source/data/settings. Reviews,
+retrieval records and memory checkpoint commit with each candle. Recovery reconstructs
+and verifies memory from that run's journal; mismatched evidence or response stores fail
+before new provider calls. Integrity failures roll back the candle. Provider outages veto
+new decisions while existing protective exits continue.
+
+Verification uses synthetic candles and recorded providers, not performance evidence.
+Next: predeclare unseen comparison windows for memory-on, frozen Jev and simple controls,
+with full candidate coverage and costs. Then forward paper evaluation. Daily unattended
+learning and an always-on worker are not implemented or started.

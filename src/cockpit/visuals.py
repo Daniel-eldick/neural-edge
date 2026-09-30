@@ -19,6 +19,7 @@ RED = "#ef9c9c"
 def label(run: Run) -> str:
     return {
         "jev-breakout-filter-v1": "Jev agent",
+        "jev-memory-filter-v1": "Jev with memory",
         "breakout-baseline-v1": "Simple strategy",
         "AlphaStrategy": "Earlier strategy",
     }.get(run.name, run.name)
@@ -280,7 +281,9 @@ def timeline(run: Run) -> str:
     return '<ol class="activity-list">' + "".join(rows) + "</ol>"
 
 
-def milestones() -> str:
+def milestones(run: Run) -> str:
+    memory = (f"{run.reviewed_cases} trades reviewed · improvement unproven"
+              if run.name == "jev-memory-filter-v1" else "Ready · not used in this run")
     return (
         '<section class="progress-strip" aria-label="Agent development milestones">'
         '<div><span class="milestone-icon done">✓</span><span><strong>Jev connected</strong>'
@@ -288,8 +291,8 @@ def milestones() -> str:
         '<div><span class="milestone-icon current">◷</span><span><strong>Testing</strong>'
         "<small>First pilot · 30 Sep 2026</small></span></div>"
         '<span class="progress-connector pending"></span>'
-        '<div><span class="milestone-icon">◇</span><span><strong>Learning</strong>'
-        "<small>Teacher &amp; memory not active</small></span></div></section>"
+        '<div><span class="milestone-icon">◇</span><span><strong>Memory</strong>'
+        f"<small>{memory}</small></span></div></section>"
     )
 
 
@@ -377,7 +380,7 @@ def dashboard(run: Run, runs: list[Run]) -> str:
             else empty("No recorded drawdown curve")
         )
         + '<span class="chart-caption">Candle closes · intrabar extremes not shown</span>'
-        "</article></div>" + milestones() + '</div><div class="side-column">'
+        "</article></div>" + milestones(run) + '</div><div class="side-column">'
         '<article class="panel decisions-panel"><div class="panel-heading"><div>'
         '<span class="eyebrow">Selectivity</span><h2>Decisions</h2></div>'
         '<span class="tiny-dot" aria-hidden="true"></span></div>'

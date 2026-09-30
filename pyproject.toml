@@ -33,6 +33,7 @@ include = ["src*"]
 
 [tool.setuptools.package-data]
 "src.cockpit" = ["template.html"]
+"src.memory" = ["curriculum.json"]
 
 [tool.ruff]
 target-version = "py311"

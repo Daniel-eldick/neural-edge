@@ -149,7 +149,8 @@ Teacher lessons need supporting examples, counterexamples and uncertainty; one l
 
 The first [foundation curriculum](../curriculum/FOUNDATIONS.md) was assembled on 2026-09-30
 with five verified primary sources, six original lesson/exercise cards and a temporal-use
-boundary. It is documentation only: no model ingestion, automated teacher or learning pass.
+boundary. Separate original runtime cards are now wired to opt-in memory, available only
+from 2026-09-30 UTC. The evidence teacher is deterministic; no competency or learning pass.
 Further curriculum work remains assigned to the assistant:
 - Start with market mechanics, order types, costs, position sizing and probability.
 - Then operational definitions of a small number of setups (e.g. trend pullback or breakout).
@@ -232,17 +233,17 @@ Limits of this increment:
 - Drawdown is sampled at opens/closes and executions; unknown intrabar portfolio paths are not reconstructed. Results can understate true drawdown. End equity includes unrealized positions and does not deduct hypothetical future liquidation fees.
 - One position per symbol, long-only, no borrowing. No exchange lot sizes, minimum notionals, spread/queue/partial-fill models, measured decision latency or chart rendering yet. Zero additional decision latency is assumed.
 - SQLite atomically checkpoints account, pending decisions, policy state, daily moments and risk halt with each candle batch. Replay refuses instance reuse and accidental journal overwrite. Recovery is offline only; external calls/orders still require deduplication/reconciliation. No unattended operation.
-- Opt-in Jev candidate filtering supports budgeted provider calls with durable response records. No teacher, learned memory, curriculum retrieval, exit modification or separate scalping agent yet. A 60-second replay is exploratory and cannot validate scalping profitability.
+- Opt-in Jev candidate filtering supports budgeted provider calls with durable response records. Opt-in causal same-run memory and a deterministic evidence teacher are implemented. No generative teacher, measured learning improvement, exit modification or separate scalping agent yet. A 60-second replay is exploratory and cannot validate scalping profitability.
 - `daily_sharpe` uses complete UTC-day equity returns, zero risk-free rate and sqrt(365) annualization with sample standard deviation. It is null below 30 complete days or for zero variance, with an explicit reason. Partial days are excluded. There is no pass/fail profitability screen in this increment.
 - Freqtrade remains a separate baseline. This independent replay avoids requiring stateful agent decisions inside its vectorized strategy pipeline; a paper-execution bridge is still unverified.
 - Python 3.12 was used for local verification. NumPy is capped below 2.5 so its stubs parse with the project's Python 3.11 type-check target. Full dependency locking and Python 3.11 runtime verification remain P0 tasks.
 
 P1/P2 are partial: simulation, admission enforcement and offline restart recovery exist;
 realistic exchange execution remains unfinished. P3 includes a Jev breakout filter with durable
-recorded responses; broader trader/teacher decisions remain pending. The first historical pilot
+recorded responses and opt-in causal memory; broader trader/generative teacher decisions remain pending. The first historical pilot
 is recorded in `docs/research/BTC_WEEK_2024_06_PILOT.md`, with 11 unevaluated candidates after
-the 100-attempt cap. Next work: predeclared full-coverage multi-window comparisons and a
-teacher/memory adapter with causal retrieval tests.
+the 100-attempt cap. Teacher/memory recovery and causal tests now pass. Next work:
+predeclared full-coverage multi-window memory-on/frozen comparisons, then forward paper.
 
 ## 10. Background operation and cost control
 
@@ -326,6 +327,127 @@ The initial documentation handoff used link/path and scope checks. Implementatio
 Source links support platform context. They do not establish that the apprentice will earn money. Curriculum selection and engine integration remain future work.
 
 ## Progress log
+
+### 2026-09-30: causal teacher and memory — complete / verified
+
+Daniel approved starting the next teacher/memory increment and asked whether resources suffice.
+Available: sourced original curriculum, causal replay, completed journals, Jev Choice API,
+shared USD 3/month ledger, durable model receipts and visual cockpit. No additional paid
+provider is needed for this first version. Scope is an evidence-based deterministic teacher
+plus opt-in Jev memory consumption; generative teaching and demonstrated trading improvement
+are separate milestones. **Tier: Full**, because memory must survive atomic replay recovery.
+
+#### 1. What and why
+Convert matured outcomes into candidate evidence cards and expose them to subsequent Jev
+candidates without hindsight, cross-run contamination, retries or rule changes. No teacher
+approval promotes a strategy. A losing example is retained as evidence, not erased.
+
+#### 2. Design
+`ClosedTradeTeacher` pairs recorded ENTER/EXIT events, validates times/prices/quantity and
+produces cases available one whole replay interval after exit. Reviews contain descriptive
+facts, supporting profitable cases, nonprofitable counterexamples and a fixed uncertainty/test
+protocol. Cases are bounded (64 retained, last 6 retrieved for the current symbol); full
+history stays in the immutable run journal. No raw free-text outcome explanation enters the
+trader prompt. Candidate lessons cannot change stop/target/sizing/risk/score/budget.
+
+`LearningPolicy` extends Jev with a bounded read of its own journal prefix before each decision.
+It journals TEACHER_REVIEW and MEMORY_READ evidence inside the same candle transaction.
+Checkpoint stores a source-bound cursor/time and memory digest; restoration reconstructs from
+that journal prefix and checks the digest and engine checkpoint time. Separate runs start
+empty; no cross-run import flag. Existing durable response store still prevents duplicate
+paid calls. Failed calls veto entries while code-managed exits continue.
+
+Six machine-readable original curriculum cards remain separate from quiz answers. Earliest
+availability is 2026-09-30 UTC, never backdated to 2024. Fixed code and model pretraining are
+contemporary external assumptions, not proof of historically clean knowledge. Only closed
+trade-derived memory follows the simulated clock. No web retrieval during replay.
+
+CLI mode `--policy jev-memory` is opt-in; `jev` is the frozen comparator. Both share the same
+per-run attempt cap and USD 3/month guard. Read-only cockpit evidence recognizes the memory
+policy, counts actual reviews/retrievals and shows honest readiness rather than a growth score.
+No historical validation/holdout is consumed in this increment.
+
+#### 3. Tasks (six; reassess above nine)
+0. Write failing tests: causal availability, losses/counterexamples, curriculum cutoff/answer
+   isolation, run separation, prefix invariance, restart parity and crash recovery.
+1. Build bounded teacher and original structured curriculum; test invalid/partial cases.
+2. Add opt-in Jev memory policy and journal-prefix reconstruction; test mismatched/corrupt
+   checkpoint and response-store identity before external requests.
+3. Add CLI mode and recorder metadata; test through complete/pause/resume CLI paths with
+   recorded model fixtures. No new API model/provider or live order path.
+4. Update cockpit evidence/milestone wording and docs; keep old historical pilot scores/data
+   unchanged. No claim the old pilot used memory. Verify UI remains coherent.
+5. Full quality gate; synthetic correctness demonstration, optional no-cost review of existing
+   completed cases, update private cockpit/handoff/PR. Record remaining evaluation work.
+
+Tasks 0–5 complete (100% of this bounded increment). Learning effectiveness remains unevaluated.
+
+#### 4. Files and blast radius
+New `src/memory/` teacher/curriculum and `src/agents/learning.py`; extend Jev policy via a
+context hook, CLI opt-in, cockpit import/presentation and tests. Package metadata includes
+the curriculum JSON for installed builds. Existing replay engine and
+journal transaction schema are not changed. Policy/CLI source changes intentionally invalidate
+older unfinished recovery contracts; preserve completed pilot files. No locked evaluator edit.
+
+#### 5. Tests
+Required assertions: future/open trades absent; review at least one interval after completion;
+case availability and review timestamps respected after restart; invalid fields fail loudly;
+losses and wins both retained; bounded retrieval; no quiz answers in prompts; curriculum empty
+before availability; original frozen requests unchanged; new prompt uses only same-run matured
+cases; interrupted and uninterrupted journal events/results match; a crash at review/response
+commit neither duplicates paid calls nor lessons; replacement response store/corrupt memory
+rejected; model failure preserves stops; no changes to historical evidence hashes.
+Python integration tests drive actual Replay/Journal/ResponseStore with fixture providers;
+no live-money E2E. Browser check applies only if presentation changes.
+
+#### 6. Failure/scalability
+Incremental sequence-index reads (one batch per decision), bounded 64-case memory, bounded
+prompt/retrieval and fixed source count. Recovery scans the committed prefix once and retains
+bounded state. A corrupt prefix/digest fails closed. SQLite owns a single writer; memory
+records and checkpoint commit together, external receipts commit independently as before.
+No additional DB service, RLS, network fanout or new dependency.
+
+#### 7. Security and rollback
+Model sees only fixed structured facts and eligible cards, never answer keys, secrets, full
+CSV or future outcomes. Prompt context cannot alter risk code. Paid calls retain current cap
+and expiry. Roll back to `--policy jev` for a new run; preserve journals/budget/receipts. Preview
+stays authenticated; no main promotion, worker or real trading.
+
+#### 8. Enforcement limits
+Bounded memory is a rolling sample, not statistical proof; promotion remains human-reviewed.
+Template-based teacher is not a new generative teacher model, parameter training or self-editing
+strategy. Memory changing a prompt does not establish improved decisions. Historical model
+pretraining contamination remains unresolved; forward paper and frozen comparisons are needed.
+Daily unattended execution and automatic publishing are still outside this increment.
+
+
+#### Completion and review evidence
+- Standard code review: no unresolved blocking findings. Fresh-eyes review independently
+  checked causal retrieval, restart ordering, duplicate response recovery and both fixes below.
+  `.Codex/landmines.md` is absent; no landmine registry could be audited.
+- Fixed during implementation: failed teacher advancement now prevents checkpoint commit and
+  rolls back the whole candle; curriculum JSON is included in package data. An isolated wheel
+  build verified `src/memory/curriculum.json` is present. No new dependencies.
+- Required gate: `ruff check .` → `All checks passed!`; `mypy .` → no issues in 57 source files;
+  `pytest -x --timeout=30` → **177 passed, 17 xfailed** (3.22s). Expected failures are the
+  pre-existing deferred sensory stubs, not passing learning behavior.
+- New integration evidence: delayed reviews, bounded mixed win/loss retrieval, curriculum
+  cutoff/answer-key isolation, future-suffix invariance, full-versus-resumed event/prompt parity,
+  altered checkpoint/store rejection, review crash rollback, durable response reuse after
+  crash and integrity-error rollback. Both CLI modes pass pause/resume; both policies retain
+  protective exits during provider errors. Synthetic fixtures are excluded from the cockpit.
+- Original baseline and Jev pilot SQLite SHA256 values match the frozen research record.
+  No new historical study or paid inference was run. The current cockpit therefore still
+  shows the original memory-free pilot, with explicit memory status; new memory runs expose
+  reviewed-case/read counts and the review timestamp. No fake learning score.
+- Private cockpit refreshed at
+  [the authenticated preview](https://neural-edge-cockpit-16pe3ge3m-daniel-eldicks-projects.vercel.app).
+  Hosting details and browser verification remain in `docs/guides/COCKPIT_HOSTING.md`.
+- Next bounded work: predeclare untouched windows and candidate-coverage rules, compare
+  memory-on against frozen Jev and controls after costs, then forward paper evaluation.
+  A generative teacher, across-run curriculum promotion, automatic daily operation and
+  interactive online controls remain unfinished. No worker or real trades started.
+
 
 ### 2026-09-30: visual cockpit — complete / browser-verified
 

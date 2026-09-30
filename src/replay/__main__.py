@@ -15,6 +15,7 @@ from dotenv import dotenv_values
 
 from src.agents.budget import Budget
 from src.agents.jev import LEDGER, ROOT, JevClient
+from src.agents.learning import LearningPolicy
 from src.agents.policy import JevPolicy
 from src.agents.responses import ResponseStore
 from src.replay.engine import Candle, Decision, Observation, Policy, Replay, Settings
@@ -54,7 +55,7 @@ def main() -> None:
     parser.add_argument("--balance", type=float, default=1000)
     parser.add_argument("--fee", type=float, default=0.001)
     parser.add_argument("--slippage", type=float, default=0.001)
-    parser.add_argument("--policy", choices=("baseline", "jev"), default="baseline",
+    parser.add_argument("--policy", choices=("baseline", "jev", "jev-memory"), default="baseline",
                         help="Jev opts into paid candidate filtering under the shared AI budget")
     parser.add_argument("--max-model-calls", type=int, default=20,
                         help="Jev attempt limit per run, 1–100 (default: 20)")
@@ -76,7 +77,7 @@ def main() -> None:
     store: ResponseStore | None = None
     try:
         policy: Policy = BreakoutBaseline()
-        if args.policy == "jev":
+        if args.policy in {"jev", "jev-memory"}:
             budget = Budget(LEDGER)
             budget.snapshot()  # Refuse missing/corrupt accounting before creating model state.
             key = os.environ.get("TYPESAFE_API_KEY") or dotenv_values(ROOT / ".env.local").get(
@@ -85,12 +86,17 @@ def main() -> None:
             client = JevClient(key, budget)
             store = ResponseStore(args.journal.with_name(args.journal.name + ".responses.sqlite"),
                                   resume=args.resume)
-            policy = JevPolicy(client, store, journal, max_attempts=args.max_model_calls)
+            policy = (LearningPolicy(client, store, journal, interval=args.interval,
+                                     max_attempts=args.max_model_calls)
+                      if args.policy == "jev-memory" else
+                      JevPolicy(client, store, journal, max_attempts=args.max_model_calls))
         if not args.resume:
             digest = hashlib.sha256(args.csv.read_bytes()).hexdigest()
             journal.record({"kind": "MANIFEST", "sha256": digest,
                             "policy": "breakout-baseline-v1" if args.policy == "baseline"
-                            else "jev-breakout-filter-v1", "simulation": "coarse-candles-v1"})
+                            else ("jev-memory-filter-v1" if args.policy == "jev-memory"
+                                  else "jev-breakout-filter-v1"),
+                            "simulation": "coarse-candles-v1"})
         result = Replay(settings, journal).run(candles, policy,
                                               resume=args.resume, stop_after=args.stop_after)
         print(json.dumps(asdict(result), indent=2, allow_nan=False))

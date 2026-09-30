@@ -33,6 +33,7 @@ class JevPolicy:
             raise ValueError("Model attempt limit must be between 1 and 100")
         self.client, self.store, self.recorder = client, store, recorder
         self.max_attempts = max_attempts
+        self.instructions = INSTRUCTIONS
         source = hashlib.sha256()
         for name in ("policy.py", "responses.py", "jev.py", "budget.py"):
             source.update(Path(__file__).with_name(name).read_bytes())
@@ -44,6 +45,10 @@ class JevPolicy:
     def restore_state(self, state: dict[str, object]) -> None:
         if state != self.save_state():
             raise ValueError("Jev response store differs from checkpoint; recovery refused")
+
+    def context(self, observation: Observation) -> dict[str, object]:
+        """Frozen policy has no teacher, curriculum or experience memory."""
+        return {}
 
     def decide(self, observation: Observation) -> Decision:
         bars = observation.candles
@@ -64,9 +69,10 @@ class JevPolicy:
             "positions": [asdict(p) for p in observation.positions],
             "equity": observation.equity, "halted": observation.halted,
             "candidate": {"symbol": latest.symbol, "stop": stop, "target": target},
+            **self.context(observation),
         }, sort_keys=True, allow_nan=False)
         key = json.dumps([latest.symbol, observation.now], separators=(",", ":"))
-        answer = self.store.choose(key, state, INSTRUCTIONS, OPTIONS,
+        answer = self.store.choose(key, state, self.instructions, OPTIONS,
                                    self.client, self.max_attempts)
         self.recorder.record({"kind": "MODEL_CHOICE", "time": observation.now,
                               "symbol": latest.symbol, "receipt": key, **asdict(answer)})

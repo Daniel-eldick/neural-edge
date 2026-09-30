@@ -56,6 +56,9 @@ class Run:
     activity: list[Activity] = field(default_factory=list)
     choice_counts: dict[str, int] = field(default_factory=dict)
     halted: bool | None = None
+    reviewed_cases: int = 0
+    memory_reads: int = 0
+    last_review_at: int | None = None
 
     @property
     def net_return(self) -> float:
@@ -139,6 +142,8 @@ def load_journal(path: Path) -> Run:
     details: deque[str] = deque(maxlen=50)
     wins = exits = 0
     model_choices = policy_errors = 0
+    reviewed_cases = memory_reads = 0
+    last_review_at: int | None = None
     inference_nano_usd = 0
     total_points = 0
     stride = 1
@@ -202,6 +207,14 @@ def load_journal(path: Path) -> Run:
                 )
             if last_kind == "POLICY_ERROR":
                 policy_errors += 1
+            if last_kind == "TEACHER_REVIEW":
+                total = count(event["reviewed_total"])
+                if total != reviewed_cases + len(event["case_ids"]):
+                    raise ValueError("Teacher review count disagrees with evidence")
+                reviewed_cases = total
+                last_review_at = count(event["time"])
+            if last_kind == "MEMORY_READ":
+                memory_reads += 1
             if last_kind in {"DECISION", "VETO", "POLICY_ERROR", "ENTER", "EXIT", "HALT"}:
                 reason = event.get("reason", event.get("error", "Drawdown halt"))
                 action = event.get("action", last_kind)
@@ -237,7 +250,7 @@ def load_journal(path: Path) -> Run:
     comparison_key = json.dumps([dataset_hash, settings, start["time"], result["time"]],
                                 sort_keys=True) if dataset_hash is not None else None
     inference_known = model_choices > 0 or policy in {
-        "breakout-baseline-v1", "jev-breakout-filter-v1",
+        "breakout-baseline-v1", "jev-breakout-filter-v1", "jev-memory-filter-v1",
     }
     return Run(
         policy, path.name, "Offline replay", f'{date(start["time"])} → {date(result["time"])}',
@@ -267,6 +280,7 @@ def load_journal(path: Path) -> Run:
         [(t, 1 - value / max(number(result["starting_equity"], minimum=0.01), high))
          for (t, value), high in zip(points, peaks, strict=True)],
         list(activity), choice_counts, bool(result["halted"]),
+        reviewed_cases, memory_reads, last_review_at,
     )
 
 
@@ -295,6 +309,7 @@ def chart(run: Run) -> str:
 def display_name(run: Run) -> str:
     return {
         "jev-breakout-filter-v1": "Jev agent",
+        "jev-memory-filter-v1": "Jev with memory",
         "breakout-baseline-v1": "Simple strategy",
         "AlphaStrategy": "Earlier strategy",
     }.get(run.name, run.name)
@@ -321,7 +336,8 @@ def coverage_warning(run: Run) -> str:
 def render(runs: list[Run]) -> str:
     # Prefer the requested agent, never the best-performing result. Input order breaks ties;
     # do not imply a chronological "latest" ordering that imported archives cannot establish.
-    selected = next((run for run in reversed(runs) if run.name == "jev-breakout-filter-v1"),
+    selected = next((run for run in reversed(runs) if run.name in {
+        "jev-breakout-filter-v1", "jev-memory-filter-v1"}),
                     runs[-1] if runs else None)
     overview = ('<article><h2>No saved runs yet</h2>'
                 '<p>Import a completed backtest to begin.</p></article>')
@@ -330,6 +346,8 @@ def render(runs: list[Run]) -> str:
     sections = []
     for index, run in enumerate(runs, start=1):
         metrics = [
+            ("Experience memory", "On · improvement unproven"
+             if run.name == "jev-memory-filter-v1" else "Not used in this run"),
             ("Net return", f"{run.net_return:+.2%}"),
             ("Ending equity", f"{run.ending_equity:,.2f} USDT"),
             ("Max drawdown", f"{run.drawdown:.2%}"),
@@ -348,6 +366,13 @@ def render(runs: list[Run]) -> str:
             ("Recorded AI cost (USD)", f"${run.inference_cost_usd:.9f}"
              if run.inference_cost_usd is not None else "Not reported"),
         ]
+        if run.name == "jev-memory-filter-v1":
+            metrics.extend([
+                ("Reviewed trades", str(run.reviewed_cases)),
+                ("Memory reads", str(run.memory_reads)),
+                ("Last review", date(run.last_review_at) if run.last_review_at is not None
+                 else "No matured trades yet"),
+            ])
         records = "".join(f"<li>{escape(row)}</li>" for row in run.details)
         sections.append(
             f'<details class="run-detail" id="run-{index}"><summary>'

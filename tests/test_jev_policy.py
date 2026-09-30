@@ -13,6 +13,7 @@ import responses
 
 from src.agents.budget import Budget
 from src.agents.jev import ENDPOINT, MODEL, Choice, JevError
+from src.agents.learning import LearningPolicy
 from src.agents.policy import JevPolicy
 from src.agents.responses import ResponseStore
 from src.cockpit.report import load_journal, render
@@ -57,6 +58,7 @@ def test_model_mapping_causal_state_and_protective_exit(
         result = Replay(Settings(), journal).run(candles(), JevPolicy(provider, store, journal))
         assert result.closed_trades == entries
         state = provider.states[0]
+        assert "memory" not in state
         assert state["now"] == 6300
         bars = state["candles"]
         assert isinstance(bars, list)
@@ -148,9 +150,11 @@ def test_replaced_store_rejected_before_model_calls(tmp_path: Path) -> None:
         store.close()
 
 
+@pytest.mark.parametrize("mode", ["jev", "jev-memory"])
 @responses.activate
 def test_cli_paid_filter_pause_resume_reuses_answer(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+    mode: str,
 ) -> None:
     budget_path = tmp_path / "budget.sqlite"
     Budget.initialize(budget_path)
@@ -167,7 +171,7 @@ def test_cli_paid_filter_pause_resume_reuses_answer(
         for c in candles()
     ))
     path = tmp_path / "run.sqlite"
-    command = ["replay", "--csv", str(source), "--journal", str(path), "--policy", "jev",
+    command = ["replay", "--csv", str(source), "--journal", str(path), "--policy", mode,
                "--max-model-calls", "1"]
     responses.post(ENDPOINT, json={
         "model": MODEL, "usage": {"input_tokens": 100},
@@ -187,7 +191,10 @@ def test_cli_paid_filter_pause_resume_reuses_answer(
     ).decode(errors="ignore")
 
 
-def test_provider_failure_vetoes_candidate_but_does_not_disable_stops(tmp_path: Path) -> None:
+@pytest.mark.parametrize("learning", [False, True])
+def test_provider_failure_vetoes_candidate_but_does_not_disable_stops(
+    tmp_path: Path, learning: bool,
+) -> None:
     class FailingProvider(Provider):
         def choose(self, state: str, instructions: str, options: dict[str, str]) -> Choice:
             if self.states:
@@ -203,7 +210,9 @@ def test_provider_failure_vetoes_candidate_but_does_not_disable_stops(tmp_path: 
     journal = Journal(path)
     store = ResponseStore(tmp_path / "responses.sqlite")
     try:
-        result = Replay(Settings(), journal).run(data, JevPolicy(FailingProvider(), store, journal))
+        policy = (LearningPolicy(FailingProvider(), store, journal, interval=300) if learning
+                  else JevPolicy(FailingProvider(), store, journal))
+        result = Replay(Settings(), journal).run(data, policy)
     finally:
         journal.close()
         store.close()

@@ -1,7 +1,7 @@
 # Apprentice curriculum v0.1
 
-Prepared and sources checked: 2026-09-30. **Status: curated teaching material; not loaded
-into Jev, no automated teacher, no training or competency pass claimed.** This is the first
+Prepared and sources checked: 2026-09-30. **Status: original runtime cards now wired to the opt-in
+Jev memory policy; no training, competency pass or improvement claimed.** This is the first
 foundation module, not a complete trading course. The [active plan](../active/APPRENTICE_TRADER_PLAN.md)
 governs risk, learning permissions and implementation. No course purchase is needed.
 
@@ -121,22 +121,25 @@ No raw webpage or later market example is to be automatically retrieved during a
 For a future historical study, a fixed contemporary curriculum would be an explicit external
 knowledge assumption, not a leakage-free simulation of a trader trained at the old date.
 Prefer forward paper evaluation for the strongest temporal check. Model pretraining knowledge
-cannot be excluded merely by hiding future CSV rows. Current runtime does not load this file.
+cannot be excluded merely by hiding future CSV rows. Runtime loads only the six separate original cards in
+`src/memory/curriculum.json`, after that availability cutoff. It never loads these answer keys.
 
 ## Handoff to the teacher/memory implementation
 
-The next implementation should store original structured lesson cards separately from quiz
-answer keys. Each card needs `lesson_id`, curriculum version/content hash, source IDs,
-creation/availability time, claim, supporting case IDs, counterexample IDs, uncertainty,
-test protocol and status (`candidate`, `evaluated`, `approved`, `rejected`). This is a proposed
-contract; no new database or runtime integration is implemented by this document.
+Implemented: `src/memory/curriculum.json` holds lesson IDs, source IDs and original claims,
+with version and availability time at pack level. The source hash binds policy recovery;
+retrieval journals a context digest. Quiz answer keys remain in this document only.
+`src/memory/teacher.py` adds trade-derived candidate lessons with supporting/counterexample
+case IDs, review/availability time, uncertainty and a fixed test protocol. This first teacher
+is deterministic; no LLM teacher, quiz grader or automatic rule promotion is implemented.
 
 Teacher input is limited to matured outcomes available at review time. A retrieval cutoff
 must apply to every case and derived lesson, including after restart. Quizzes use synthetic
 fixtures; evaluation uses separately frozen data. Neither teacher nor memory can change
 risk caps, spending limits, evaluation criteria, or strategy source at runtime.
 
-Completion evidence will require tests for future-case rejection, answer-key isolation,
-checkpoint recovery, counterexample retention and same-data learned-versus-frozen comparisons.
+Tests now cover future-case rejection, answer-key isolation, checkpoint/crash recovery and
+counterexample retention. Same-data memory-on versus frozen comparisons remain to be run;
+passing plumbing tests does not demonstrate profitable learning.
 Record actual API cost before selecting any additional teacher provider. Stay inside the
 existing total USD 3/month allowance; no provider purchase is required for this source pack.
