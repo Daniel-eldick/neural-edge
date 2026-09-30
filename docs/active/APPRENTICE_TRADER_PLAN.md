@@ -375,6 +375,91 @@ Source links support platform context. They do not establish that the apprentice
 
 ## Progress log
 
+### 2026-09-30: context comparison screen v1 — authorized / protocol frozen before data
+
+#### 1. What / why
+Bounded continuation authorized by Daniel's “can you keep going?” after the proposed fresh
+context-versus-memory comparison. Full tier for historical integrity; existing USD 3/month
+inference limit and private static-preview authorization apply. No trading-policy tuning.
+
+#### 2. Fixed design
+Study ID `context-screen-v1`. BTC/USDT 5m, UTC start-inclusive/end-exclusive windows:
+**2022-02-10 to 2022-02-13**, **2022-06-10 to 2022-06-13**, **2022-10-10 to 2022-10-13**.
+Same calendar dates in separated periods; no retrospective regime selection or claim of full
+bull/bear/sideways coverage. Each has 864 bars, first21 warmup, 1000USDT, .001 fee/side and
+.001 adverse slippage/fill. Existing risk, 2% stop, 4% target and 24h holding unchanged.
+Model, prompts, context descriptors and decision/risk/replay sources fixed at `19ed060`.
+Only dataset/evaluation/reporting helpers may change. Memory begins empty in each run;
+2026 curriculum remains unavailable. Contemporary model pretraining cannot be ruled out.
+
+One run per window, in order: baseline, memory-only Jev, context+memory Jev. Same data/settings,
+no repeat draws, retries, prompt edits, higher call limits, replacement dates or longer/shorter
+windows. Raw prior20 breakout bound ignoring position/halt gates must be <=100 for both paid
+variants; otherwise skip that window's paid pair and report infeasible coverage. Stop remaining
+paid runs on any provider failure, policy error, incomplete replay or invalid evidence.
+No positive-result promotion from this small exploratory study.
+
+Daily context: checksum-verified official Binance 1d monthly spot archives. History starts
+2021-12-01 for February, 2022-04-01 for June, 2022-08-01 for October; ends at each test's
+exclusive end. Read exactly those three monthly daily archives per window. Verify contiguous
+UTC days and full context availability at first candidate cutoff. Reconcile OHLCV of each
+full replay day against aggregated 288 intraday bars (relative tolerance 1e-9, absolute 1e-8).
+No repair or substitution. Archive file publication is later than candle close; these are
+reconstructed historical bars, not proof of original arrival/revision timestamps.
+
+Cash and full-allocation buy/hold from common bar21 open remain analytical references, with
+entry costs and final mark, no hypothetical liquidation. They are not risk-governed agents.
+Primary descriptive outcome: context-minus-memory return in percentage points per window;
+also drawdown, open/closed trades, candidate coverage, context availability, receipts/cost.
+Changed instructions and stochastic output prevent isolating context content causally.
+No pooled account, annualized study score, statistical significance or market-cycle claim.
+
+Require zero pending reservations and >=$1.80 worst-case headroom (600×$0.003) before calls.
+Existing shared ledger is authoritative; reconcile exact successful costs and unresolved
+reservations afterwards. No budget reset, additional provider or subscription.
+
+#### 3. Tasks (six; reassess above nine)
+- [ ] 0. Failing tests: daily ZIP/checksum/range/gap/mismatch, context evidence receipt equality,
+  context-source binding and report mode while preserving memory-screen behavior.
+- [ ] 1. Implement strict daily importer, overlap reconciliation and read-only context evaluation.
+- [ ] 2. Acquire fixed data once; record hashes/preflight; no paid calls unless eligibility passes.
+- [ ] 3. Execute fixed eligible trials once; retain all evidence and reconcile costs/source hashes.
+- [ ] 4. Save report and publish actual results to private cockpit, preserving earlier evidence.
+- [ ] 5. Review/Full QA, integrity checks, docs and existing draft PR update.
+
+#### 4. Files / blast radius
+New `src/evaluation/daily.py`, context-study tests; extend `src/evaluation/{screen,__main__}.py`
+with explicit context-study mode, preserving the old default and its evidence checks. No new
+policy, risk, replay or UI design. Reuse dated cockpit groups and context labels/overlay.
+Datasets/journals/receipts live ignored under `user_data/research/context-screen-v1/`; final
+research/review docs in docs, current status links updated. No new dependency.
+
+#### 5. Verification
+Tests first; recorded providers for helper integration; full ruff/mypy/pytest before publishing.
+Validate context receipts against reconstructed exact point-in-time daily/weekly snapshots,
+not just timestamp claims. Verify source hash in manifest and checkpoint; reject context in
+memory-only inputs. Existing memory-screen regressions must pass. Original completed artifact
+hashes remain unchanged. Browser check actual protected snapshot on desktop/tablet/phone,
+authentication redirect and hosted/local byte comparison. No hosted DB/tenant migrations.
+
+#### 6. Scale / failure
+Twelve bounded source ZIPs, sequential paid calls under existing attempts/timeouts/ledger.
+Daily import max12 archives, 4MiB each and 10,000 selected days. No automatic study growth at
+10x load. Corrupt/missing source or reconciliation mismatch blocks paid trials; keep failure
+record. No silent fallback and no retries for uncertain provider responses.
+
+#### 7. Security / rollback
+Existing ignored credentials and protected budget only. No source uploads, live orders,
+worker or main promotion. Deploy static HTML/config from isolated staging. Preserve all
+prior/results artifacts; rollback preview only, never erase experimental evidence.
+
+#### 8. Limits
+Three short periods, one asset, coarse fills, prompt confounding, contemporary model knowledge
+and revised archives prevent broad learning/cycle claims. No pattern-example library. These
+windows become consumed development evidence. Future selection/promotion needs a larger
+predeclared protocol and forward paper data. Missing landmine registry stays a warning.
+
+
 ### 2026-09-30: causal daily/weekly context v1 — complete / correctness-tested (6/6)
 
 #### 1. What and why / authorization
