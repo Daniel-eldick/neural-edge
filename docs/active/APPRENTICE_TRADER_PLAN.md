@@ -32,11 +32,11 @@ This file is the single active project reference. Other status pages are navigat
 | Learning | Staged: memory, then strategy-selection weights, then rules |
 | Historical screening | Net profit, annualized Sharpe > 1, maximum drawdown < 10% |
 | Operating goal | Background operation, eventually minimal weekly review |
-| Current authorization | Implementation and local verification; AI inference capped at USD 3/month (2026-09-30); no deployment or real trading |
+| Current authorization | Implementation and local verification; AI inference capped at USD 3/month (2026-09-30); private Vercel cockpit preview authorized; no unattended worker or real trading |
 
 The proposed 1.5% aggregate cap was NOT accepted; preserve 2.5%.
 The recommendation to defer scalping was NOT accepted as a scope deletion. Retain it as a separate milestone requiring better execution evidence.
-Live capital, shorting, leverage, paid services beyond the USD 3/month AI allowance, and deployment are not authorized.
+Live capital, shorting, leverage, new paid services beyond the USD 3/month AI allowance, and unattended workers are not authorized. Daniel authorized hosting the saved-results cockpit on his existing Vercel account on 2026-09-30; this does not authorize production/main promotion or trading services.
 
 ## 3. Repository review: actual state
 
@@ -258,11 +258,51 @@ No additional conceptual questionnaire is needed. Before spending or launching, 
 - Simulated capital and intended eventual capital (not yet selected by the user).
 - Venue/data availability and permitted use.
 - TypeSafe credentials and a USD 3/month AI ceiling are now supplied (2026-09-30).
-  Other provider credentials, host and alert destination remain unresolved.
+  Other provider credentials, a persistent worker host and alert destination remain unresolved.
+  The static cockpit uses Daniel's existing Vercel account; it does not host the worker.
 - Whether to stage the scalping milestone later; it remains requested scope.
 - Exact evaluation dates, evidence thresholds and emergency liquidation policy.
 
 First action for the next agent: reproduce the checks and continue the explicitly unfinished milestones above. Implementation is authorized; the April task list remains superseded. Resolve credentials and spending limits before paid model integration.
+
+### 2026-09-30: private Vercel results preview — deployed and access-verified
+
+Daniel asked to use his Vercel and then instructed continuation. Scope: host the existing
+saved-results HTML behind Vercel Authentication, using the existing account without a plan
+upgrade. The CLI verified account `daniel-eldick`, scope `daniel-eldicks-projects` (Pro).
+No existing project matched NeuralEdge. This is hosting of a static report, not paper
+operations, automatic result syncing, new AI calls or a background trading worker.
+
+Implementation/verification plan:
+1. Create a dedicated `neural-edge-cockpit` project with standard Vercel Authentication;
+   verify protection before uploading any report.
+2. Stage only generated `index.html` and static hosting configuration in an isolated ignored
+   directory. No repository upload, Git integration, database, API key or environment file.
+3. Deploy a preview (never `--prod`), verify readiness and anonymous access denial, then
+   compare authenticated HTML to the local report and inspect hosted layout where possible.
+4. Record URL, protection and refresh instructions; keep the snapshot date and degraded
+   Jev pilot warning visible. Update docs/PR; do not merge or promote main.
+
+Evidence: preview `dpl_CeJjyUx4jXphuxPY13Wfcgm9F48q` is READY with `target: null`
+(preview), no aliases, and standard Vercel Authentication enabled. Anonymous requests return
+HTTP 302 to login with no report content; authenticated requests return HTTP 200 and the exact
+local HTML when the documented toolbar-suppression header is supplied. The report SHA256 is
+`8e93816158fdc01418fde0ee8da53f39a5ee5c8e9940b2f92b34522ab4357503`.
+Response headers enforce private/no-store, no-index, no-sniff and a restrictive CSP. The
+in-app browser reached Vercel login; authenticated visual review awaits Daniel's browser login.
+See [access and refresh instructions](../guides/COCKPIT_HOSTING.md).
+
+Deployment incident: CLI 59.3.0 treated the first `--target preview` upload as production and
+created `neural-edge-cockpit.vercel.app`. Its alias was removed immediately, verified HTTP 404,
+and the initial deployment was deleted after the replacement preview was READY. The alias
+may have exposed the generated report briefly; access during that interval was not audited.
+The upload contained only the static report/config, never tokens or databases. Future deploys
+must also use `--skip-domain` and verify returned target/aliases, not trust the requested flag.
+No Git branch was merged or promoted. Existing Pro account used without upgrade or add-on.
+
+Rollback: delete the preview/project via the Vercel dashboard if needed; local journals and
+budget accounting remain authoritative. Each refresh is a new explicit report generation
+and preview deploy. No promise of live controls or automatic learning in this increment.
 
 ## 12. Documentation organization and verification
 

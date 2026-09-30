@@ -36,9 +36,13 @@ The existing Freqtrade config remains separate: its three-position limit and leg
 
 ## Results cockpit
 
-The local cockpit displays saved experiments in one browser page, with returns, drawdown,
+The cockpit displays saved experiments in one browser page, with returns, drawdown,
 trade records, and recorded replay equity. It is a dated snapshot; the AI trading loop,
-teacher/memory, live connection status, start/pause controls and online hosting are not connected yet.
+teacher/memory, live connection status and start/pause controls are not connected yet.
+
+[Open the private online cockpit](https://neural-edge-cockpit-auhm09y2p-daniel-eldicks-projects.vercel.app) and sign in with the Vercel account
+that owns this project. It uses your existing Vercel plan. Results update only when regenerated
+and redeployed. See [hosting and refresh instructions](docs/guides/COCKPIT_HOSTING.md).
 
 Completed replays also report the number of complete UTC days and descriptive daily Sharpe
 using sample standard deviation, zero risk-free return and sqrt(365) annualization.
