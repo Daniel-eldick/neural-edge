@@ -3,10 +3,10 @@
 Verified 2026-09-30. This hosts a dated results snapshot only. Trading, teacher/memory,
 background execution, controls and automatic publishing are not hosted here.
 
-- [Open cockpit](https://neural-edge-cockpit-d0gfjuguh-daniel-eldicks-projects.vercel.app) — sign in with the Vercel account that owns the project.
+- [Open cockpit](https://neural-edge-cockpit-47dgm6f7s-daniel-eldicks-projects.vercel.app) — sign in with the Vercel account that owns the project.
 - [Manage project](https://vercel.com/daniel-eldicks-projects/neural-edge-cockpit)
 - Scope: `daniel-eldicks-projects`; project: `prj_sphrTaxgCiGWvkTZhtzQ8GtUCcj2`.
-- Preview: `dpl_C1Akhj2XaziU1BiPpsNncpURAqJ6`; READY, preview target, no aliases.
+- Preview: `dpl_AKRwNes3s2GDaUVWds8JTwUWXabw`; READY, preview target, no aliases.
 - Authentication: standard Vercel protection, `prod_deployment_urls_and_all_previews`.
 - Uses the existing Pro account, with no plan upgrade, add-on, functions or database.
   Static hosting consumes the account's normal usage allowance; this is not a separate
@@ -39,8 +39,9 @@ background execution, controls and automatic publishing are not hosted here.
    desktop/mobile layout after browser login. Browser refresh alone does not regenerate data.
 
 Current access and visual checks passed at 1440×1050 desktop, 820×1180 tablet and 390×844 phone.
-The snapshot retains 18 replay/reference records, including three fully covered memory-screen
-windows and the original pilot. Its overview shows October memory mode by fixed input order;
+The snapshot retains 33 replay/reference records: three fully covered context-screen windows,
+three earlier memory-screen windows and the original pilot/archive. Its overview shows
+October 2022 context mode by fixed input order;
 dated evidence groups expose all periods. The hosted HTML matches the local snapshot byte for byte.
 Authenticated browser automation reused the existing Vercel project automation credential in
 memory, restricted its request header to this deployment origin, and blocked other origins.

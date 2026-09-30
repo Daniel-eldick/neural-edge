@@ -11,11 +11,15 @@ Measured learning and competency evaluation remain unfinished.
 
 Recurring market-pattern recognition is now an explicit requirement. Frozen Jev input is
 21 base-interval bars; memory mode adds bounded trade memory. Opt-in `jev-context` now adds
-causal daily/weekly OHLCV history, with explicit unknown states and tested recovery. Its
-performance has not been measured. Verified daily study datasets, chart-pattern retrieval
-and multi-cycle evaluation remain unfinished. See the single plan's section 7.
+causal daily/weekly OHLCV history, with explicit unknown states and tested recovery. The first
+[context screen](research/CONTEXT_SCREEN_V1.md) is complete with verified daily data: it
+avoided memory-only losses by always waiting, matching cash across three falling periods.
+Broader market coverage, missed-opportunity evaluation, chart-pattern retrieval and
+multi-cycle evaluation remain unfinished. See the single plan's section 7.
 Formal [teacher/memory QA](reviews/2026-09-30_TEACHER_MEMORY_QA.md) passed with warnings.
 
 The [comparison screen review and Full QA](reviews/2026-09-30_MEMORY_SCREEN_QA.md) passed with warnings: 190 tests passed, 17 existing expected failures.
 
 [Daily/weekly context QA](reviews/2026-09-30_MARKET_CONTEXT_QA.md): 215 passed, 17 existing expected failures; no new paid inference or real context study.
+
+[Context-study review and Full QA](reviews/2026-09-30_CONTEXT_SCREEN_QA.md): 228 passed, 17 existing expected failures. No learned-edge or operating-readiness claim.

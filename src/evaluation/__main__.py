@@ -8,6 +8,7 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+from src.agents.market_context import MarketContext
 from src.cockpit.report import load_archive, load_journal, render
 from src.evaluation.screen import (
     candidates,
@@ -27,12 +28,27 @@ def main() -> None:
         required=True,
         help="Directory with candles.csv and baseline/jev/memory.sqlite",
     )
+    parser.add_argument(
+        "--with-context",
+        action="store_true",
+        help="Compare memory/context with verified daily.csv instead of frozen/memory",
+    )
     parser.add_argument("--output", type=Path, required=True, help="New JSON summary path")
     parser.add_argument("--html", type=Path, required=True, help="New cockpit HTML path")
-    parser.add_argument("--archive", type=Path, action="append", default=[],
-                        help="Earlier archive to retain in cockpit evidence")
-    parser.add_argument("--journal", type=Path, action="append", default=[],
-                        help="Earlier completed journal to retain in cockpit evidence")
+    parser.add_argument(
+        "--archive",
+        type=Path,
+        action="append",
+        default=[],
+        help="Earlier archive to retain in cockpit evidence",
+    )
+    parser.add_argument(
+        "--journal",
+        type=Path,
+        action="append",
+        default=[],
+        help="Earlier completed journal to retain in cockpit evidence",
+    )
     args = parser.parse_args()
     if args.output.exists() or args.html.exists() or args.output.resolve() == args.html.resolve():
         parser.error("Report paths must be distinct new files; evidence is never overwritten")
@@ -42,13 +58,21 @@ def main() -> None:
     all_runs.extend(load_journal(path) for path in args.journal)
     windows = []
     for directory in args.window:
-        runs = window_runs(directory)
+        runs = window_runs(directory, with_context=args.with_context)
         all_runs.extend(runs)
         frozen, memory = runs[-2:]
         receipts = receipt_evidence(
-            directory / "memory.sqlite.responses.sqlite",
+            directory
+            / (
+                "context.sqlite.responses.sqlite"
+                if args.with_context
+                else "memory.sqlite.responses.sqlite"
+            ),
             memory,
-            checkpoint(directory / "memory.sqlite")["policy_state"]["response_store"],
+            checkpoint(directory / ("context.sqlite" if args.with_context else "memory.sqlite"))[
+                "policy_state"
+            ]["response_store"],
+            MarketContext.from_csv(directory / "daily.csv") if args.with_context else None,
         )
         windows.append(
             {
@@ -56,8 +80,11 @@ def main() -> None:
                 "period": memory.period,
                 "csv_sha256": hashlib.sha256((directory / "candles.csv").read_bytes()).hexdigest(),
                 "raw_candidate_upper_bound": candidates(load_candles(directory / "candles.csv")),
-                "memory_minus_frozen_percentage_points": (memory.net_return - frozen.net_return)
-                * 100,
+                (
+                    "context_minus_memory_percentage_points"
+                    if args.with_context
+                    else "memory_minus_frozen_percentage_points"
+                ): (memory.net_return - frozen.net_return) * 100,
                 "memory_exposed_choices": receipts["choices_with_trade_memory"],
                 "runs": [
                     {
@@ -81,7 +108,7 @@ def main() -> None:
         "generated_at": datetime.now(UTC).isoformat(),
         "windows": windows,
         "interpretation": "Descriptive comparison, not proof of improvement. "
-        "Memory mode changes instructions as well as evidence; a single stochastic "
+        "Variants change instructions as well as evidence; a single stochastic "
         "run per variant cannot isolate a reliable learning effect. "
         "USD AI costs are separate from USDT trading returns. "
         "Cash/buy-and-hold references are not risk-governed policies.",

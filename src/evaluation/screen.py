@@ -11,8 +11,10 @@ from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
 from src.agents.jev import PRICE_NANO_USD_PER_TOKEN, parse_response
+from src.agents.market_context import MarketContext
 from src.agents.policy import OPTIONS
 from src.cockpit.report import Activity, Run, date, load_journal
+from src.evaluation.daily import reconcile
 from src.replay.engine import Candle, Settings
 from src.replay.performance import DailyPerformance
 
@@ -149,7 +151,9 @@ def checkpoint(path: Path) -> dict[str, Any]:
         connection.close()
 
 
-def receipt_evidence(path: Path, run: Run, identity: str) -> dict[str, int]:
+def receipt_evidence(
+    path: Path, run: Run, identity: str, market: MarketContext | None = None
+) -> dict[str, int]:
     """Cross-check saved receipts without reopening a writable response store."""
     journal = sqlite3.connect((path.parent / run.source).resolve().as_uri() + "?mode=ro", uri=True)
     events: dict[str, dict[str, Any]] = {}
@@ -187,12 +191,21 @@ def receipt_evidence(path: Path, run: Run, identity: str) -> dict[str, int]:
                 or event["symbol"] != state["candles"][-1]["symbol"]
             ):
                 raise ValueError("Receipt decision differs from journal")
+            if run.name == "jev-context-filter-v1":
+                if market is None or state.get("market_context") != market.snapshot(
+                    event["symbol"], state["now"]
+                ):
+                    raise ValueError("Receipt context differs from point-in-time source evidence")
+            elif "market_context" in state:
+                raise ValueError("Unexpected context in control receipt")
             choices += 1
             cost += answer.input_tokens * PRICE_NANO_USD_PER_TOKEN
             if any(c["opened_at"] + 300 > state["now"] for c in state["candles"]):
                 raise ValueError("Receipt contains a future candle")
             memory = state.get("memory")
-            if (run.name == "jev-memory-filter-v1") != isinstance(memory, dict):
+            if (run.name in {"jev-memory-filter-v1", "jev-context-filter-v1"}) != isinstance(
+                memory, dict
+            ):
                 raise ValueError("Receipt memory mode differs from declared policy")
             if memory:
                 exposed += bool(memory["cases"])
@@ -220,11 +233,19 @@ def receipt_evidence(path: Path, run: Run, identity: str) -> dict[str, int]:
         connection.close()
 
 
-def window_runs(directory: Path) -> list[Run]:
+def window_runs(directory: Path, *, with_context: bool = False) -> list[Run]:
     source = directory / "candles.csv"
     bars = load_candles(source)
     if candidates(bars) > 100:
         raise ValueError("Candidate upper bound exceeds frozen 100-attempt coverage")
+    market = MarketContext.from_csv(directory / "daily.csv") if with_context else None
+    policies = POLICIES
+    if market is not None:
+        reconcile(market, bars)
+        view = market.snapshot(bars[0].symbol, bars[20].opened_at + 300)
+        if any(view[frame]["status"] != "available" for frame in ("daily", "weekly")):
+            raise ValueError("Context comparison requires complete initial daily/weekly history")
+        policies = (POLICIES[0], POLICIES[2], ("context", "jev-context-filter-v1"))
     settings = Settings()
     data_digest = hashlib.sha256()
     for bar in bars:
@@ -239,7 +260,7 @@ def window_runs(directory: Path) -> list[Run]:
         sort_keys=True,
     )
     runs = []
-    for filename, policy in POLICIES:
+    for filename, policy in policies:
         path = directory / f"{filename}.sqlite"
         if not path.is_file():
             raise FileNotFoundError(f"Missing comparison journal: {filename}")
@@ -255,6 +276,23 @@ def window_runs(directory: Path) -> list[Run]:
             "settings"
         ] != asdict(settings):
             raise ValueError("Comparison checkpoint data/settings differ from supplied candles")
+        if filename == "context":
+            assert market is not None
+            connection = sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)
+            try:
+                manifests = [
+                    json.loads(row[0])
+                    for row in connection.execute("SELECT payload FROM events ORDER BY sequence")
+                    if json.loads(row[0]).get("kind") == "MANIFEST"
+                ]
+            finally:
+                connection.close()
+            if (
+                len(manifests) != 1
+                or manifests[0].get("context_sha256") != market.source_sha256
+                or f":context-v1:{market.source_sha256}:" not in state["contract"]["policy"]
+            ):
+                raise ValueError("Context source differs from manifest/checkpoint")
         if run.policy_errors:
             raise ValueError("Comparison candidate coverage is incomplete")
         if filename != "baseline":
@@ -262,6 +300,7 @@ def window_runs(directory: Path) -> list[Run]:
                 path.with_name(path.name + ".responses.sqlite"),
                 run,
                 state["policy_state"]["response_store"],
+                market,
             )
         # Numeric-equivalent JSON must also group identically in the read-only cockpit.
         run.comparison_key = key

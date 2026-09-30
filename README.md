@@ -12,7 +12,10 @@ The first [historical pilot](docs/research/BTC_WEEK_2024_06_PILOT.md) is complet
 incomplete Jev coverage after its predeclared attempt cap. The subsequent
 [three-window memory screen](docs/research/MEMORY_SCREEN_V1.md) completed with full coverage:
 memory mode narrowly beat frozen Jev twice and tied once, but only closed three trades.
-The simple baseline beat both in the first two windows. Profitability remains unproven.
+The simple baseline beat both in the first two windows. A subsequent
+[context screen](docs/research/CONTEXT_SCREEN_V1.md) completed three fresh 2022 comparisons:
+context Jev stayed in cash throughout, avoiding memory-only losses but matching cash.
+Profitability remains unproven.
 
 - [Documentation index](docs/README.md)
 - [Agent instructions](AGENTS.md)
@@ -50,7 +53,7 @@ Incomplete evaluation warnings remain visible. Memory runs report reviewed trade
 counts and the last review timestamp. The original pilot did not use memory. This remains a
 dated snapshot; live connection status, automatic updates and start/pause controls are pending.
 
-[Open the private online cockpit](https://neural-edge-cockpit-d0gfjuguh-daniel-eldicks-projects.vercel.app) and sign in with the Vercel account
+[Open the private online cockpit](https://neural-edge-cockpit-47dgm6f7s-daniel-eldicks-projects.vercel.app) and sign in with the Vercel account
 that owns this project. It uses your existing Vercel plan. Results update only when regenerated
 and redeployed. See [hosting and refresh instructions](docs/guides/COCKPIT_HOSTING.md).
 
@@ -176,15 +179,16 @@ Correctness verification uses synthetic candles and recorded providers. The firs
 [memory comparison screen](docs/research/MEMORY_SCREEN_V1.md) is complete; its report includes
 results, limits, costs and a read-only regeneration command (`python -m src.evaluation`).
 An opt-in daily/weekly context variant is now implemented and correctness-tested (below).
-Next: acquire verified daily history for fresh predeclared context comparisons, and design
-separate recurring-pattern evidence. Larger studies and forward paper evaluation
+The first context comparison is complete (below). Next: a fresh protocol that measures missed
+opportunities and covers broader market conditions, separating context from prompt effects.
+Recurring-pattern retrieval remains a separate unfinished capability. Larger studies and forward paper evaluation
 remain required. Daily unattended learning and an always-on worker are not implemented or started.
 
 ## Daily and weekly context (experimental)
 
 A separate `jev-context` variant combines the same trade memory with closed daily/weekly
 OHLCV context. Existing `jev` and `jev-memory` prompts remain unchanged. This is a tested
-capability, **not a measured performance improvement or a four-year-cycle detector**.
+capability, **not a proven profitable strategy or a four-year-cycle detector**.
 
 ```bash
 .venv/bin/python -m src.replay --csv candles.csv --journal user_data/ai/context-run-001.sqlite \
@@ -196,7 +200,8 @@ Timestamps are UTC Unix seconds at midnight; each row represents one complete da
 The file must be contiguous, finite, single-symbol and match the intraday symbol, with at
 most 10,000 rows / 4 MiB. Gaps, duplicates and wrong intervals fail explicitly. Verify source
 provenance before real research: this parser does not certify that data came from an exchange.
-The existing monthly importer handles 5m archives, not daily history.
+`src.evaluation.daily.convert_daily` now verifies official daily monthly archives/checksums;
+`reconcile` cross-checks complete intraday days against their daily OHLCV before evaluation.
 
 At each decision only already-closed days and complete Monday-to-Monday UTC weeks are exposed.
 Payloads contain up to 30 daily / 12 weekly candles. Descriptors use the last 20 days / 8 weeks:
@@ -212,7 +217,16 @@ outside model input; earlier requests remain identical when only future prices c
 `CONTEXT_READ` records and durable requests preserve the exact supplied evidence. The cockpit
 recognizes context+memory runs and prefers memory-only as the comparison overlay.
 
-This implementation used recorded providers only, with no new paid inference. The private
-online cockpit still shows the completed real memory study; synthetic QA runs are not published.
+Implementation tests used recorded providers. The subsequent [actual context study](docs/research/CONTEXT_SCREEN_V1.md)
+completed 173 paid requests for USD 0.035785470: all 88 context decisions waited; each
+memory-only account lost approximately 0.50%. Cash matched context trading performance
+without inference spending. All three periods declined; no profitable entry or rising-market
+ability was demonstrated. The private cockpit now retains 33 actual replay/reference records.
+Synthetic QA runs are not published.
 New source versions reject old unfinished checkpoints by design; use the original revision
 for those runs. Completed reports remain readable. See [context QA](docs/reviews/2026-09-30_MARKET_CONTEXT_QA.md).
+
+To rebuild the three context comparisons without model calls, use `python -m src.evaluation
+--with-context` with the three window directories and new JSON/HTML output paths; see the
+[study report](docs/research/CONTEXT_SCREEN_V1.md) for the complete command and provenance.
+The default evaluation mode still validates the earlier frozen-versus-memory study.

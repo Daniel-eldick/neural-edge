@@ -170,7 +170,8 @@ market-cycle evaluation pending.**
 
 Frozen Jev still sees 21 closed base-interval bars (105 minutes at 5m); memory-only adds
 recent same-run trade facts. A separate opt-in `jev-context` now supplies closed daily/weekly
-OHLCV history. This is correctness-tested, not performance-tested. It does not retrieve chart
+OHLCV history. Its first [comparison screen](../research/CONTEXT_SCREEN_V1.md) is complete:
+always waiting avoided memory-only losses in three falling periods but matched cash. It does not retrieve chart
 analogues or substantiate a four-year-cycle interpretation.
 
 Direction (daily/weekly arithmetic context implemented in the increment below; remaining
@@ -289,7 +290,8 @@ is recorded in `docs/research/BTC_WEEK_2024_06_PILOT.md`, with 11 unevaluated ca
 the 100-attempt cap. Teacher/memory recovery and causal tests now pass. The first
 [three-window memory screen](../research/MEMORY_SCREEN_V1.md) is complete with full coverage
 but inconclusive learning evidence. Causal daily/weekly context v1 is now implemented and
-correctness-tested. Next: verified daily data and fresh predeclared context evaluation,
+correctness-tested. Its first real context screen matched cash by abstaining throughout.
+Next: broader market coverage and missed-opportunity evaluation under a fresh protocol,
 recurring-pattern design, then forward paper.
 
 ## 10. Background operation and cost control
@@ -375,7 +377,7 @@ Source links support platform context. They do not establish that the apprentice
 
 ## Progress log
 
-### 2026-09-30: context comparison screen v1 — authorized / protocol frozen before data
+### 2026-09-30: context comparison screen v1 — complete / all-context abstention
 
 #### 1. What / why
 Bounded continuation authorized by Daniel's “can you keep going?” after the proposed fresh
@@ -419,13 +421,13 @@ Existing shared ledger is authoritative; reconcile exact successful costs and un
 reservations afterwards. No budget reset, additional provider or subscription.
 
 #### 3. Tasks (six; reassess above nine)
-- [ ] 0. Failing tests: daily ZIP/checksum/range/gap/mismatch, context evidence receipt equality,
+- [x] 0. Failing tests: daily ZIP/checksum/range/gap/mismatch, context evidence receipt equality,
   context-source binding and report mode while preserving memory-screen behavior.
-- [ ] 1. Implement strict daily importer, overlap reconciliation and read-only context evaluation.
-- [ ] 2. Acquire fixed data once; record hashes/preflight; no paid calls unless eligibility passes.
-- [ ] 3. Execute fixed eligible trials once; retain all evidence and reconcile costs/source hashes.
-- [ ] 4. Save report and publish actual results to private cockpit, preserving earlier evidence.
-- [ ] 5. Review/Full QA, integrity checks, docs and existing draft PR update.
+- [x] 1. Implement strict daily importer, overlap reconciliation and read-only context evaluation.
+- [x] 2. Acquire fixed data once; record hashes/preflight; no paid calls unless eligibility passes.
+- [x] 3. Execute fixed eligible trials once; retain all evidence and reconcile costs/source hashes.
+- [x] 4. Save report and publish actual results to private cockpit, preserving earlier evidence.
+- [x] 5. Review/Full QA, integrity checks, docs and existing draft PR update.
 
 #### 4. Files / blast radius
 New `src/evaluation/daily.py`, context-study tests; extend `src/evaluation/{screen,__main__}.py`
@@ -459,6 +461,25 @@ and revised archives prevent broad learning/cycle claims. No pattern-example lib
 windows become consumed development evidence. Future selection/promotion needs a larger
 predeclared protocol and forward paper data. Missing landmine registry stays a warning.
 
+
+#### Completion evidence — 2026-09-30
+
+This increment 6/6 tasks (100%), not overall product completion. Fixed protocol `c0ad832`
+preceded twelve source downloads; daily/intraday values reconciled. Raw call bounds 36/25/27;
+all nine runs completed with zero errors and full coverage. All decision/risk/replay/context
+source hashes stayed unchanged. No reruns, tuning, replacement periods or expanded limits.
+
+Context mode declined all 88 candidates and returned 0% in every period, versus approximately
+−0.499791% for memory-only in each. Cash also returned 0% with no inference cost. All three
+realized reference periods fell; no rising-market or learned-edge claim. **Do not promote.**
+Study used 173 successful requests, USD 0.035785470, exactly reconciled. Monthly accounted
+USD 0.068974836, remaining USD 2.931025164; no unresolved reservations. Original and new
+completed journal/receipt hashes unchanged. [Full results](../research/CONTEXT_SCREEN_V1.md).
+
+Ruff/mypy clean (66 files); full tests 228 passed, 17 existing expected failures. Independent
+review found no blocker. [Full QA](../reviews/2026-09-30_CONTEXT_SCREEN_QA.md) records browser
+and protected-preview checks. Cockpit retains 33 replay/reference records in seven comparison
+groups; October context selected by fixed input order. No worker, live order or main promotion.
 
 ### 2026-09-30: causal daily/weekly context v1 — complete / correctness-tested (6/6)
 
