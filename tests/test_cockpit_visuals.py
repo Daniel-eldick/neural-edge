@@ -171,3 +171,15 @@ def test_memory_chart_prefers_frozen_control_and_labels_window(tmp_path: Path) -
     assert 'Simple strategy' not in overview
     assert 'Jev agent' in overview and 'Jev with memory' in overview
     assert 'Same-input comparison · 1970-01-01' in page
+
+
+def test_context_chart_prefers_memory_only_control(tmp_path: Path) -> None:
+    path = tmp_path / "journal.sqlite"
+    recorded_run(path)
+    frozen = load_journal(path)
+    memory = replace(frozen, name="jev-memory-filter-v1")
+    context = replace(frozen, name="jev-context-filter-v1")
+    overview = render([frozen, memory, context]).split('<details class="evidence"')[0]
+    assert "Return vs memory-only Jev" in overview
+    assert "Jev with context + memory" in overview and "Jev with memory" in overview
+    assert "Ready · not used in this run" not in overview

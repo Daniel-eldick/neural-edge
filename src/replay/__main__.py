@@ -14,8 +14,10 @@ from pathlib import Path
 from dotenv import dotenv_values
 
 from src.agents.budget import Budget
+from src.agents.contextual import ContextPolicy
 from src.agents.jev import LEDGER, ROOT, JevClient
 from src.agents.learning import LearningPolicy
+from src.agents.market_context import MarketContext
 from src.agents.policy import JevPolicy
 from src.agents.responses import ResponseStore
 from src.replay.engine import Candle, Decision, Observation, Policy, Replay, Settings
@@ -55,8 +57,11 @@ def main() -> None:
     parser.add_argument("--balance", type=float, default=1000)
     parser.add_argument("--fee", type=float, default=0.001)
     parser.add_argument("--slippage", type=float, default=0.001)
-    parser.add_argument("--policy", choices=("baseline", "jev", "jev-memory"), default="baseline",
+    parser.add_argument("--policy", choices=("baseline", "jev", "jev-memory", "jev-context"),
+                        default="baseline",
                         help="Jev opts into paid candidate filtering under the shared AI budget")
+    parser.add_argument("--context-csv", type=Path,
+                        help="UTC daily OHLCV history, required only for jev-context")
     parser.add_argument("--max-model-calls", type=int, default=20,
                         help="Jev attempt limit per run, 1–100 (default: 20)")
     parser.add_argument("--resume", action="store_true",
@@ -68,16 +73,21 @@ def main() -> None:
         parser.error("--stop-after must be positive")
     if not 1 <= args.max_model_calls <= 100:
         parser.error("--max-model-calls must be between 1 and 100")
+    if (args.policy == "jev-context") != (args.context_csv is not None):
+        parser.error("--context-csv is required exactly when --policy is jev-context")
     settings = Settings(args.balance, args.interval, args.fee, args.slippage)
     with args.csv.open(newline="") as source:
         candles = [Candle(row["symbol"], int(row["opened_at"]),
                           *[float(row[k]) for k in ("open", "high", "low", "close", "volume")])
                    for row in csv.DictReader(source)]
+    market = MarketContext.from_csv(args.context_csv) if args.context_csv is not None else None
+    if market is not None and {c.symbol for c in candles} != {market.symbol}:
+        raise ValueError("Context and intraday data must have the same single symbol")
     journal = Journal(args.journal, resume=args.resume)
     store: ResponseStore | None = None
     try:
         policy: Policy = BreakoutBaseline()
-        if args.policy in {"jev", "jev-memory"}:
+        if args.policy in {"jev", "jev-memory", "jev-context"}:
             budget = Budget(LEDGER)
             budget.snapshot()  # Refuse missing/corrupt accounting before creating model state.
             key = os.environ.get("TYPESAFE_API_KEY") or dotenv_values(ROOT / ".env.local").get(
@@ -86,17 +96,25 @@ def main() -> None:
             client = JevClient(key, budget)
             store = ResponseStore(args.journal.with_name(args.journal.name + ".responses.sqlite"),
                                   resume=args.resume)
-            policy = (LearningPolicy(client, store, journal, interval=args.interval,
-                                     max_attempts=args.max_model_calls)
-                      if args.policy == "jev-memory" else
-                      JevPolicy(client, store, journal, max_attempts=args.max_model_calls))
+            if market is not None:
+                policy = ContextPolicy(client, store, journal, interval=args.interval,
+                                       market=market, max_attempts=args.max_model_calls)
+            elif args.policy == "jev-memory":
+                policy = LearningPolicy(client, store, journal, interval=args.interval,
+                                        max_attempts=args.max_model_calls)
+            else:
+                policy = JevPolicy(client, store, journal, max_attempts=args.max_model_calls)
         if not args.resume:
             digest = hashlib.sha256(args.csv.read_bytes()).hexdigest()
-            journal.record({"kind": "MANIFEST", "sha256": digest,
-                            "policy": "breakout-baseline-v1" if args.policy == "baseline"
-                            else ("jev-memory-filter-v1" if args.policy == "jev-memory"
-                                  else "jev-breakout-filter-v1"),
-                            "simulation": "coarse-candles-v1"})
+            names = {"baseline": "breakout-baseline-v1", "jev": "jev-breakout-filter-v1",
+                     "jev-memory": "jev-memory-filter-v1", "jev-context": "jev-context-filter-v1"}
+            manifest: dict[str, object] = {"kind": "MANIFEST", "sha256": digest,
+                                           "policy": names[args.policy],
+                                           "simulation": "coarse-candles-v1"}
+            if market is not None:
+                manifest["context_sha256"] = market.source_sha256
+                manifest["context_interval"] = 86400
+            journal.record(manifest)
         result = Replay(settings, journal).run(candles, policy,
                                               resume=args.resume, stop_after=args.stop_after)
         print(json.dumps(asdict(result), indent=2, allow_nan=False))

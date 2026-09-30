@@ -213,6 +213,14 @@ def load_journal(path: Path) -> Run:
                     raise ValueError("Teacher review count disagrees with evidence")
                 reviewed_cases = total
                 last_review_at = count(event["time"])
+            if last_kind == "CONTEXT_READ":
+                closed = [date(event[key]) if event[key] is not None else "unknown"
+                          for key in ("daily_last_closed_at", "weekly_last_closed_at")]
+                details.append(
+                    f'{date(event["time"])} · {event["symbol"]} · '
+                    f'Daily {event["daily_status"]} / weekly {event["weekly_status"]} · '
+                    f'closed through {closed[0]} / {closed[1]}'
+                )
             if last_kind == "MEMORY_READ":
                 memory_reads += 1
             if last_kind in {"DECISION", "VETO", "POLICY_ERROR", "ENTER", "EXIT", "HALT"}:
@@ -251,6 +259,7 @@ def load_journal(path: Path) -> Run:
                                 sort_keys=True) if dataset_hash is not None else None
     inference_known = model_choices > 0 or policy in {
         "breakout-baseline-v1", "jev-breakout-filter-v1", "jev-memory-filter-v1",
+        "jev-context-filter-v1",
     }
     return Run(
         policy, path.name, "Offline replay", f'{date(start["time"])} → {date(result["time"])}',
@@ -310,6 +319,7 @@ def display_name(run: Run) -> str:
     return {
         "jev-breakout-filter-v1": "Jev agent",
         "jev-memory-filter-v1": "Jev with memory",
+        "jev-context-filter-v1": "Jev with context + memory",
         "breakout-baseline-v1": "Simple strategy",
         "AlphaStrategy": "Earlier strategy",
     }.get(run.name, run.name)
@@ -337,7 +347,7 @@ def render(runs: list[Run]) -> str:
     # Prefer the requested agent, never the best-performing result. Input order breaks ties;
     # do not imply a chronological "latest" ordering that imported archives cannot establish.
     selected = next((run for run in reversed(runs) if run.name in {
-        "jev-breakout-filter-v1", "jev-memory-filter-v1"}),
+        "jev-breakout-filter-v1", "jev-memory-filter-v1", "jev-context-filter-v1"}),
                     runs[-1] if runs else None)
     overview = ('<article><h2>No saved runs yet</h2>'
                 '<p>Import a completed backtest to begin.</p></article>')
@@ -347,7 +357,8 @@ def render(runs: list[Run]) -> str:
     for index, run in enumerate(runs, start=1):
         metrics = [
             ("Experience memory", "On · improvement unproven"
-             if run.name == "jev-memory-filter-v1" else "Not used in this run"),
+             if run.name in {"jev-memory-filter-v1", "jev-context-filter-v1"} else
+             "Not used in this run"),
             ("Net return", f"{run.net_return:+.2%}"),
             ("Ending equity", f"{run.ending_equity:,.2f} USDT"),
             ("Max drawdown", f"{run.drawdown:.2%}"),
@@ -366,7 +377,7 @@ def render(runs: list[Run]) -> str:
             ("Recorded AI cost (USD)", f"${run.inference_cost_usd:.9f}"
              if run.inference_cost_usd is not None else "Not reported"),
         ]
-        if run.name == "jev-memory-filter-v1":
+        if run.name in {"jev-memory-filter-v1", "jev-context-filter-v1"}:
             metrics.extend([
                 ("Reviewed trades", str(run.reviewed_cases)),
                 ("Memory reads", str(run.memory_reads)),

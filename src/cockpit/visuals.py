@@ -20,6 +20,7 @@ def label(run: Run) -> str:
     return {
         "jev-breakout-filter-v1": "Jev agent",
         "jev-memory-filter-v1": "Jev with memory",
+        "jev-context-filter-v1": "Jev with context + memory",
         "breakout-baseline-v1": "Simple strategy",
         "AlphaStrategy": "Earlier strategy",
     }.get(run.name, run.name)
@@ -149,12 +150,15 @@ def performance(run: Run, matching: list[Run]) -> str:
     candidates = [
         other for other in matching if other is not run and other.name != run.name and other.equity
     ]
-    preferred = ("jev-breakout-filter-v1" if run.name == "jev-memory-filter-v1"
-                 else "breakout-baseline-v1")
+    preferred = {"jev-memory-filter-v1": "jev-breakout-filter-v1",
+                 "jev-context-filter-v1": "jev-memory-filter-v1"}.get(
+                     run.name, "breakout-baseline-v1")
     others = sorted(candidates, key=lambda item: item.name != preferred)[:1]
     view_label = "Return vs baseline" if others else "Trading return"
     if others and run.name == "jev-memory-filter-v1" and others[0].name == preferred:
         view_label = "Return vs frozen Jev"
+    if others and run.name == "jev-context-filter-v1" and others[0].name == preferred:
+        view_label = "Return vs memory-only Jev"
     series = []
     for index, item in enumerate([run, *others]):
         points = list(item.equity)
@@ -287,7 +291,8 @@ def timeline(run: Run) -> str:
 
 def milestones(run: Run) -> str:
     memory = (f"{run.reviewed_cases} trades reviewed · improvement unproven"
-              if run.name == "jev-memory-filter-v1" else "Ready · not used in this run")
+              if run.name in {"jev-memory-filter-v1", "jev-context-filter-v1"} else
+              "Ready · not used in this run")
     return (
         '<section class="progress-strip" aria-label="Agent development milestones">'
         '<div><span class="milestone-icon done">✓</span><span><strong>Jev connected</strong>'

@@ -150,7 +150,7 @@ def test_replaced_store_rejected_before_model_calls(tmp_path: Path) -> None:
         store.close()
 
 
-@pytest.mark.parametrize("mode", ["jev", "jev-memory"])
+@pytest.mark.parametrize("mode", ["jev", "jev-memory", "jev-context"])
 @responses.activate
 def test_cli_paid_filter_pause_resume_reuses_answer(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
@@ -173,6 +173,11 @@ def test_cli_paid_filter_pause_resume_reuses_answer(
     path = tmp_path / "run.sqlite"
     command = ["replay", "--csv", str(source), "--journal", str(path), "--policy", mode,
                "--max-model-calls", "1"]
+    if mode == "jev-context":
+        history = tmp_path / "daily.csv"
+        history.write_text("symbol,opened_at,open,high,low,close,volume\n"
+                           "BTC,0,100,100,100,100,1\n")
+        command += ["--context-csv", str(history)]
     responses.post(ENDPOINT, json={
         "model": MODEL, "usage": {"input_tokens": 100},
         "answers": {"decision": {"type": "choice", "choice": "enter", "confidence": 0.8,
@@ -219,3 +224,32 @@ def test_provider_failure_vetoes_candidate_but_does_not_disable_stops(
     assert result.closed_trades == 1 and result.open_positions == 0
     assert any(e["kind"] == "POLICY_ERROR" and e["symbol"] == "ETH" for e in events(path))
     assert not any(e["kind"] == "ENTER" and e["symbol"] == "ETH" for e in events(path))
+
+
+@pytest.mark.parametrize("mode,context", [("jev-context", False), ("jev", True)])
+def test_cli_requires_context_only_with_context_policy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str, context: bool,
+) -> None:
+    args = ["replay", "--csv", str(tmp_path / "missing.csv"), "--journal",
+            str(tmp_path / "run.sqlite"), "--policy", mode]
+    if context:
+        args += ["--context-csv", str(tmp_path / "missing-daily.csv")]
+    monkeypatch.setattr(sys, "argv", args)
+    with pytest.raises(SystemExit):
+        cli.main()
+    assert not (tmp_path / "run.sqlite").exists()
+
+
+def test_cli_context_symbol_mismatch_fails_before_creating_journal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source, history = tmp_path / "intraday.csv", tmp_path / "daily.csv"
+    header = "symbol,opened_at,open,high,low,close,volume\n"
+    source.write_text(header + "BTC,0,100,100,100,100,1\n")
+    history.write_text(header + "ETH,0,100,100,100,100,1\n")
+    path = tmp_path / "run.sqlite"
+    monkeypatch.setattr(sys, "argv", ["replay", "--csv", str(source), "--journal", str(path),
+                                     "--policy", "jev-context", "--context-csv", str(history)])
+    with pytest.raises(ValueError, match="same single symbol"):
+        cli.main()
+    assert not path.exists()

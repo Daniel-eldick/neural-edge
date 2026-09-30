@@ -175,6 +175,44 @@ new decisions while existing protective exits continue.
 Correctness verification uses synthetic candles and recorded providers. The first actual
 [memory comparison screen](docs/research/MEMORY_SCREEN_V1.md) is complete; its report includes
 results, limits, costs and a read-only regeneration command (`python -m src.evaluation`).
-Next: design causal daily/weekly context and recurring-pattern evidence, then evaluate that
-separate feature on fresh predeclared windows. Larger studies and forward paper evaluation
+An opt-in daily/weekly context variant is now implemented and correctness-tested (below).
+Next: acquire verified daily history for fresh predeclared context comparisons, and design
+separate recurring-pattern evidence. Larger studies and forward paper evaluation
 remain required. Daily unattended learning and an always-on worker are not implemented or started.
+
+## Daily and weekly context (experimental)
+
+A separate `jev-context` variant combines the same trade memory with closed daily/weekly
+OHLCV context. Existing `jev` and `jev-memory` prompts remain unchanged. This is a tested
+capability, **not a measured performance improvement or a four-year-cycle detector**.
+
+```bash
+.venv/bin/python -m src.replay --csv candles.csv --journal user_data/ai/context-run-001.sqlite \
+  --policy jev-context --context-csv daily.csv --max-model-calls 20
+```
+
+`daily.csv` uses columns `symbol,opened_at,open,high,low,close,volume` in that order.
+Timestamps are UTC Unix seconds at midnight; each row represents one complete daily candle.
+The file must be contiguous, finite, single-symbol and match the intraday symbol, with at
+most 10,000 rows / 4 MiB. Gaps, duplicates and wrong intervals fail explicitly. Verify source
+provenance before real research: this parser does not certify that data came from an exchange.
+The existing monthly importer handles 5m archives, not daily history.
+
+At each decision only already-closed days and complete Monday-to-Monday UTC weeks are exposed.
+Payloads contain up to 30 daily / 12 weekly candles. Descriptors use the last 20 days / 8 weeks:
+period return, its direction and mean high-low range divided by open. These are descriptions,
+not forecasts. Incomplete sample or stale last-close date produces `unknown` with no descriptor.
+Expect at least eight full earlier weeks for weekly descriptors; a partial first week is omitted.
+Supplying future rows never makes their prices available early. Historical arrival/revision
+latency and model pretraining contamination remain unresolved.
+
+The context source hash is recorded in the manifest and bound to recovery. Resume requires
+identical daily bytes as well as the existing replay inputs/settings/policy. Full-file hash stays
+outside model input; earlier requests remain identical when only future prices change. Dated
+`CONTEXT_READ` records and durable requests preserve the exact supplied evidence. The cockpit
+recognizes context+memory runs and prefers memory-only as the comparison overlay.
+
+This implementation used recorded providers only, with no new paid inference. The private
+online cockpit still shows the completed real memory study; synthetic QA runs are not published.
+New source versions reject old unfinished checkpoints by design; use the original revision
+for those runs. Completed reports remain readable. See [context QA](docs/reviews/2026-09-30_MARKET_CONTEXT_QA.md).

@@ -165,13 +165,16 @@ Further curriculum work remains assigned to the assistant:
 Daniel explicitly wants the apprentice to recognize recurring market patterns, including
 possible multi-year Bitcoin cycles. Record the proposed bull-market interpretation as a
 hypothesis, not a confirmed regime or a required trading bias. **Status: accepted product
-requirement; design/evaluation work pending, not implemented by the memory increment.**
+requirement; daily/weekly context v1 implemented separately; pattern retrieval and
+market-cycle evaluation pending.**
 
-Current gap: the Jev candidate prompt contains only 21 closed base-interval bars (105 minutes
-at 5m). Memory retrieves recent same-run completed trade facts, not chart analogues or a
-multi-year market history. It cannot currently substantiate a four-year-cycle interpretation.
+Frozen Jev still sees 21 closed base-interval bars (105 minutes at 5m); memory-only adds
+recent same-run trade facts. A separate opt-in `jev-context` now supplies closed daily/weekly
+OHLCV history. This is correctness-tested, not performance-tested. It does not retrieve chart
+analogues or substantiate a four-year-cycle interpretation.
 
-Proposed bounded direction, to specify before implementation:
+Direction (daily/weekly arithmetic context implemented in the increment below; remaining
+pattern-library and performance work still require separate specification):
 - Add timestamped daily/weekly price-volume context alongside the intraday decision window.
   Keep the agreed OHLCV-only inputs. Higher-timeframe candles must be completely closed at
   the decision cutoff; insufficient history yields an explicit unknown state.
@@ -285,8 +288,9 @@ recorded responses and opt-in causal memory; broader trader/generative teacher d
 is recorded in `docs/research/BTC_WEEK_2024_06_PILOT.md`, with 11 unevaluated candidates after
 the 100-attempt cap. Teacher/memory recovery and causal tests now pass. The first
 [three-window memory screen](../research/MEMORY_SCREEN_V1.md) is complete with full coverage
-but inconclusive learning evidence. Next: causal daily/weekly context and recurring-pattern
-design, fresh predeclared evaluation, then forward paper.
+but inconclusive learning evidence. Causal daily/weekly context v1 is now implemented and
+correctness-tested. Next: verified daily data and fresh predeclared context evaluation,
+recurring-pattern design, then forward paper.
 
 ## 10. Background operation and cost control
 
@@ -370,6 +374,116 @@ The initial documentation handoff used link/path and scope checks. Implementatio
 Source links support platform context. They do not establish that the apprentice will earn money. Curriculum selection and engine integration remain future work.
 
 ## Progress log
+
+### 2026-09-30: causal daily/weekly context v1 — complete / correctness-tested (6/6)
+
+#### 1. What and why / authorization
+Daniel's “can you keep going?” follows the explicit next step of daily/weekly context.
+Implement this bounded opt-in capability under existing authorization. Full tier because
+historical causality and checkpoint identity are correctness boundaries. No new paid study,
+worker, automatic promotion, risk change or daily learning claim in this increment.
+
+#### 2. Design
+Add `--policy jev-context --context-csv daily.csv`, a separate variant extending the existing
+memory policy. Frozen Jev and memory-only prompts stay unchanged. Daily input uses the same
+OHLCV CSV columns, one symbol, UTC-midnight opens, one row per day, contiguous and finite;
+reject empty, missing, duplicate, misaligned or excessive input (max 10,000 rows / 4 MiB).
+CLI validates the context symbol against the intraday dataset before creating a journal.
+This is explicitly daily input, not an arbitrary 5m file reinterpreted as daily candles.
+
+Read the file once; record its SHA-256 in the run manifest and bind its bytes plus feature
+source to checkpoint identity. Full-file provenance stays outside model input: a future suffix
+must not alter any earlier request. Local code remains trusted; historical publication/revision
+latency and model pretraining are not proven by timestamp filtering.
+
+At decision time, select only daily candles with open + 86400 <= now. Aggregate weekly candles
+from exactly seven contiguous daily rows starting Monday 00:00 UTC; omit partial weeks. Weekly
+open is first open, high/low extrema, close last close, volume sum. Both frames use bisect
+against close times and bounded trailing slices (30 daily / 12 weekly rows). No incomplete
+current bar. Availability timestamps are the end of each candle.
+
+Descriptors are arithmetic, not a bull-market classifier: trailing 20-day or 8-week return
+(last close / first open - 1), direction up/down/flat by its sign, and mean (high-low)/open.
+The descriptive window must be complete and current: last daily close at latest UTC midnight;
+last weekly close at latest Monday midnight. Otherwise status `unknown` with reason
+`insufficient_history` or `stale_history`, and no direction/return/range value. Raw visible
+closed candles remain explicitly dated; the model is told unknown does not imply a trend.
+This adds context, not a pattern library, cycle claim, confidence estimate or new entry rule.
+
+Record `CONTEXT_READ` at each actual candidate with cutoff, frame status/last-close dates and
+prefix digest. Exact context is already saved in durable response requests. It is stateless
+relative to the immutable context CSV, so resume reconstructs identically; changing any source
+byte rejects resume before another model call. Existing journal transactions/response receipts
+handle rollback/deduplication; preserve memory integrity behavior.
+
+UI scope is labels and existing evidence rows only: identify “Jev with context + memory”, report
+memory enabled, show dated context status in expandable records, and prefer memory-only as the
+comparison overlay. Reuse the established cockpit UX brief; no new flow, panel or control.
+Latest real cockpit remains the completed study; do not publish synthetic development fixtures.
+
+#### 3. Tasks (six; reassess above nine)
+- [x] 0. Write failing causal boundary, exact aggregation/descriptor, invalid input, stale/unknown,
+  suffix invariance, resume/change rejection, crash/deduplication and CLI integration tests.
+- [x] 1. Implement bounded read-only daily history and completed-week aggregation.
+- [x] 2. Wire separate context+memory policy and CLI provenance/recovery contract.
+- [x] 3. Identify new variant honestly in existing cockpit records; regression-test labels/overlay.
+- [x] 4. Run synthetic recorded-provider integration, full gate, code review and Full QA.
+- [x] 5. Update plan/status/usage and QA evidence; commit/push the existing draft PR.
+
+#### 4. Files / blast radius
+New `src/agents/market_context.py`, `src/agents/contextual.py`, `tests/test_market_context.py`.
+Modify replay CLI, existing CLI tests, cockpit report/visuals and their focused tests; update
+README/status/plan/review docs. No modification to engine, existing policy/memory source,
+evaluator, risk settings, budget, completed journals or comparison protocol. Replay CLI source
+is part of the existing engine hash: older unfinished runs require their original revision.
+
+#### 5. Test plan
+Tests first: exact Monday close boundary and partial-week omission; 20/8 sample thresholds;
+future suffix cannot change earlier context/model request; stale/unknown has null descriptors;
+no cross-symbol context, missing/duplicate/nonfinite daily data, row/file bounds; changed daily
+file rejects resume before calls; uninterrupted vs paused events/inputs equal; response saved
+before crash reused once; provider failure leaves independent exits operating. End-to-end CLI
+uses mocked HTTP and a temporary budget, including pause/resume and private-key exclusion.
+No browser E2E framework required by root guidance; manual local fixture render checks existing
+records/labels, no real result claim. No database/tenant services; Supabase/npm checks N/A.
+Run ruff, strict mypy, full pytest. Missing landmine registry disclosed, not a fabricated pass.
+
+#### 6. Scale / failure
+One bounded CSV load, O(n) aggregation, O(log n + 42) context selection per candidate. No per-
+candidate I/O or API calls beyond existing Jev requests. No mutable cache growth. At 10x load
+histories remain independently bounded; multi-symbol sharing and distributed execution remain
+separate designs. Malformed sources fail before trading; missing historical coverage is visible.
+Provider errors keep existing risk behavior. Numeric overflow in aggregation/descriptors fails
+explicitly rather than serializing infinity. No package dependency added.
+
+#### 7. Security / rollback
+Use existing budget and receipt controls only. No paid calls needed for this implementation.
+No private token/data in Git or browser fixtures. Feature is opt-in; revert to `jev-memory` for
+new runs, preserving prior evidence. Context mismatch on resume fails closed. Paper mandate,
+0.5%/2.5%/five-position independent controls remain untouched. No hosted auth/config changes.
+
+#### 8. Limits / next gate
+Correct timestamp filtering is not proof of useful context or verified point-in-time vendor
+availability. Daily inputs need verified source manifests before a real study; this loader does
+not certify exchange origin. No chart-analogue retrieval or multi-year-cycle inference yet.
+Future real study needs unused declared windows, enough earlier daily history, candidate
+coverage preflight, frozen controls and immutable settings before viewing outcomes.
+
+
+#### Completion evidence — 2026-09-30
+
+This bounded implementation: 6/6 tasks, 100%; broader learning/trading product remains partial.
+Twenty-five additional cases bring the full suite to **215 passed, 17 existing expected failures**;
+ruff and mypy (64 files) clean. Exact calendar boundaries, descriptors, unknown/stale behavior,
+future-suffix request invariance, changed-file recovery rejection, crash deduplication and mocked
+HTTP CLI pause/resume verified. Independent review found no blocking production issue.
+
+Local synthetic cockpit QA passed at desktop/tablet/phone sizes with context labels, dated
+evidence, memory-only overlay and working controls. No synthetic fixture deployed. Real
+cockpit and all fifteen completed memory-study journal/receipt hashes preserved. Budget status
+unchanged: USD 0.033189366 accounted, USD 2.966810634 remaining, no unresolved reservations.
+No paid calls, worker, policy promotion, risk change, main promotion or new dependency.
+See [review and Full QA evidence](../reviews/2026-09-30_MARKET_CONTEXT_QA.md).
 
 ### 2026-09-30: memory comparison screen v1 — complete / protocol frozen before data
 
