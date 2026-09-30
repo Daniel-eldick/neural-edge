@@ -369,6 +369,100 @@ Source links support platform context. They do not establish that the apprentice
 
 ## Progress log
 
+### 2026-09-30: memory comparison screen v1 — authorized / protocol frozen before data
+
+Implementation and bounded paid inference are authorized by Daniel's continuation and existing
+USD 3/month limit. Using the planning skill, **Full tier** for offline evaluation integrity.
+This is an initial comparison screen, not a sealed final holdout or market-cycle validation.
+
+#### 1. What and why
+Measure memory-on Jev against frozen Jev and the deterministic breakout on previously unused
+project windows. Fix dates, costs, coverage and interpretation before loading those candles.
+Use this to decide what to investigate next, not to claim profitable learning from a few trades.
+
+#### 2. Design / fixed protocol
+Study ID `memory-screen-v1`. BTC/USDT, 5m, three UTC windows: **2023-01-10 to 2023-01-13**,
+**2023-06-10 to 2023-06-13**, **2023-10-10 to 2023-10-13**, start inclusive/end exclusive.
+Dates use the same day-of-month across separated calendar periods, not chart-selected regimes.
+Read one checksum-verified Binance spot monthly archive per window; never repair missing bars.
+No additional warmup prefix: all variants see the same 864 candles, with 21 closed bars before
+first eligibility. Initial balance 1,000 USDT; fee 0.1% per side; adverse slippage 0.1% per fill;
+original risk, stop/target, max-holding and drawdown rules. Fixed model `jev-1.13.0` and prompts
+from `a3de91b`; evaluation helpers may be added but decision/risk code must remain unchanged.
+
+One run each of baseline, frozen Jev and memory Jev per eligible window; no repeated draws,
+prompt tuning, window extensions, replacement dates or post-result parameter changes. Memory
+starts empty in each window; no curriculum cards are historically available in 2023. Thus this
+compares recent trade memory, not the full curriculum, multi-timeframe context or training.
+Contemporary pretrained model knowledge cannot be excluded by prefix-only data access.
+
+Preflight counts every raw breakout over prior 20 bars without position/halt gates. That is
+an upper bound on calls for either Jev variant. If it exceeds 100, do NOT run either paid
+variant on that window, shorten it, or raise the cap: report infeasible coverage. Run order is
+chronological window order, baseline then frozen then memory. Preserve all failures. Stop
+remaining paid runs if provider/network/schema failures occur; no failed-request retries.
+Budget snapshot before start must have zero unresolved reservations and enough headroom for
+600 × $0.003 = $1.80 worst-case new reservations; the shared monthly cap remains authoritative.
+Any actual policy error, incomplete run or missing receipt invalidates that paired comparison.
+
+Read-only controls: cash (0%) and full-allocation buy-and-hold from the first common tradable
+open (bar index 21), with the same entry fee/slippage. Mark holdings to the final close, no
+hypothetical exit cost. This reference is not a risk-governed agent: no stops or 24h limit.
+Do not combine USD inference costs and USDT trading P&L under an unstated conversion rate.
+
+Primary descriptive outcome: memory-minus-frozen net trading return per window, alongside
+sampled drawdown, completed/open trades, model coverage and AI costs. No aggregate Sharpe,
+p-value or promotion from three three-day windows. Missing results or too few reviewed cases
+are reported as inconclusive. Even consistent positive differences are only grounds for a
+separately predeclared larger study; a nonpositive result is not repaired by tuning this study.
+
+UX: use the existing cockpit graphs and same-input comparison details. Clearly name cash and
+buy-and-hold as references and keep each period separate. Show one dated window in the overview
+by predeclared input order (the last eligible window), not the best-performing window. Preserve
+the original pilot evidence. No new controls or status that implies an operating worker.
+
+#### 3. Tasks and failing tests (six; reassess above nine)
+- [ ] 0. Write failing tests for raw-candidate bound, exact benchmark fee/slippage/warmup and
+  integrity rejection (mismatched dates/hash/settings, failed/incomplete comparison).
+- [ ] 1. Implement small read-only evaluation helpers and reproducible report entry point.
+- [ ] 2. Acquire/verify the fixed windows, record source/CSV hashes and preflight bounds.
+- [ ] 3. Run eligible comparisons once through the existing shared ledger and durable receipts;
+  reconcile usage exactly, retain errors and unfinished windows if stopping is required.
+- [ ] 4. Save the full report and publish the selected actual results to the private cockpit.
+- [ ] 5. Code review, QA, full gate, original-evidence integrity check, documentation and PR.
+
+#### 4. Files / blast radius
+Add `src/evaluation/` and `tests/test_evaluation.py`; read existing Replay, Journal, ResponseStore,
+DailyPerformance and cockpit Run/render interfaces. Extend no trading policy or risk logic.
+Store protocol/result report in `docs/research/`; datasets/journals/response files remain ignored
+under `user_data/research/memory-screen-v1/`. Reuse the existing protected static preview.
+
+#### 5. Verification
+Test-first: no helper implementation before failing tests. Exact hand-calculated reference
+returns; no entry in warmup; raw bound covers the maximum eligible model schedule; reject
+nonmatching/corrupt/partial evidence rather than charting it. Integration uses recorded providers
+before paid runs. Full Python quality gate; independent review if fixes require it; Full QA
+including private browser layout and disclosure checks. No live-order E2E or new hosted DB.
+
+#### 6. Scale / failure
+Three fixed bounded CSVs; stream existing journals read-only. Paid requests sequential through
+existing timeout, max-attempt and ledger protections. At 10× load, keep per-study limits and
+explicitly plan more windows; no automatic expansion. No DB connection pool or distributed
+worker. Ambiguous receipts remain charged and are not retried. Any provider error stops the
+remaining paid study, preserving results instead of discarding a losing/incomplete window.
+
+#### 7. Security / rollback
+No secrets in commands/logs or artifacts. Keys loaded by the existing CLI. Do not alter/reset
+budget, responses, prior datasets or journals. Static hosting only, authenticated preview, no
+main promotion. Rollback selects the prior cockpit snapshot while preserving all study evidence.
+
+#### 8. Limits
+Three days/window, one asset, limited trade sample, contemporary model pretraining and coarse
+candle execution cannot validate a market cycle or establish learning edge. Exogenous matching
+controls have different exposure/risk from the bot. No new recurring-pattern engine or daily
+worker is included. Missing landmine registry stays disclosed; Supabase/npm guidance is N/A.
+
+
 ### 2026-09-30: formal QA and recurring-pattern requirement
 
 [Full QA evidence](../reviews/2026-09-30_TEACHER_MEMORY_QA.md) now records the previously
