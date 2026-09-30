@@ -84,7 +84,8 @@ Model selection remains open:
 - Daniel reaffirmed on 2026-09-29 that Jev belongs in the intended new brain. Integrate it
   behind a decision-support interface and benchmark it before granting decision influence.
   API connectivity is verified under the USD 3/month allowance (2026-09-30).
-  No trading policy calls it yet; decision influence remains unvalidated.
+  An opt-in experimental breakout filter now calls it during offline replay. One synthetic
+  end-to-end check passed; its decision quality on real markets remains unvalidated.
 - Do not interpret classification confidence as probability of profitable return without calibration.
 - Chart images are an optional controlled experiment; numerical input is the proposed baseline.
 - No claim that chart recognition reveals actual participant psychology.
@@ -227,15 +228,15 @@ Limits of this increment:
 - Drawdown is sampled at opens/closes and executions; unknown intrabar portfolio paths are not reconstructed. Results can understate true drawdown. End equity includes unrealized positions and does not deduct hypothetical future liquidation fees.
 - One position per symbol, long-only, no borrowing. No exchange lot sizes, minimum notionals, spread/queue/partial-fill models, measured decision latency or chart rendering yet. Zero additional decision latency is assumed.
 - SQLite atomically checkpoints account, pending decisions, policy state, daily moments and risk halt with each candle batch. Replay refuses instance reuse and accidental journal overwrite. Recovery is offline only; external calls/orders still require deduplication/reconciliation. No unattended operation.
-- No teacher, learned memory, curriculum retrieval, provider calls, exit modification or separate scalping agent yet. A 60-second replay is exploratory and cannot validate scalping profitability.
+- Opt-in Jev candidate filtering supports budgeted provider calls with durable response records. No teacher, learned memory, curriculum retrieval, exit modification or separate scalping agent yet. A 60-second replay is exploratory and cannot validate scalping profitability.
 - `daily_sharpe` uses complete UTC-day equity returns, zero risk-free rate and sqrt(365) annualization with sample standard deviation. It is null below 30 complete days or for zero variance, with an explicit reason. Partial days are excluded. There is no pass/fail profitability screen in this increment.
 - Freqtrade remains a separate baseline. This independent replay avoids requiring stateful agent decisions inside its vectorized strategy pipeline; a paper-execution bridge is still unverified.
 - Python 3.12 was used for local verification. NumPy is capped below 2.5 so its stubs parse with the project's Python 3.11 type-check target. Full dependency locking and Python 3.11 runtime verification remain P0 tasks.
 
 P1/P2 are partial: simulation, admission enforcement and offline restart recovery exist;
-realistic exchange execution remains unfinished. P3 has a decision interface and independently
-verified Jev connector, but no trading adapter. Next work: durable recorded-response decisions,
-then a trader/teacher adapter with causal memory tests before a budgeted model experiment.
+realistic exchange execution remains unfinished. P3 includes a Jev breakout filter with durable
+recorded responses; broader trader/teacher decisions remain pending. Next work: predeclared
+real-market baseline comparisons and a teacher/memory adapter with causal retrieval tests.
 
 ## 10. Background operation and cost control
 
@@ -277,6 +278,89 @@ The initial documentation handoff used link/path and scope checks. Implementatio
 Source links support platform context. They do not establish that the apprentice will earn money. Curriculum selection and engine integration remain future work.
 
 ## Progress log
+
+### 2026-09-30 continuation: Jev replay decisions with durable responses
+
+**Status: IMPLEMENTED. Tier: Full (durable external side effects).** Daniel authorized
+continued implementation; no further input is needed. Uses the existing plan skill and
+approved USD 3/month guard. One bounded synthetic integration check may use a real model;
+it is plumbing evidence only. No market evaluation, hosting or worker is started.
+
+**1. Purpose:** connect Jev to a narrow, observable simulated trading decision without
+duplicate paid calls on replay recovery. This is an experimental candidate filter, not the
+teacher, learned memory or complete autonomous trader.
+
+**2. Design:** opt-in `--policy jev` keeps the default fixed baseline unchanged. The same
+20-bar breakout creates a candidate; Jev chooses ENTER or WAIT using only the last 21 closed
+OHLCV bars, current portfolio and a fixed prompt. Stop/target remain fixed at 2%/4%; sizing,
+cash, position and drawdown limits remain deterministic. Existing positions retain independent
+protective exits. No call during warmup, no candidate, halt or full portfolio. Default 20 model
+attempts per run, configurable 1–100, plus the shared USD 3/month cap. Limits count attempts,
+not just successes. Exhaustion and provider errors are visible POLICY_ERROR events.
+
+A per-run SQLite response file commits a request identity and pending marker BEFORE network
+I/O in a separate transaction from candle events. A successful validated response is saved
+before it can influence a proposal. Retrying the exact request reuses the saved response;
+pending/failed rows never resubmit. A crash after provider success but before saving may lose
+that answer and force abstention; this deliberate cost is preferable to duplicate spending.
+The cache identity is bound into policy checkpoints. Missing/replaced/corrupt stores fail closed.
+Prompt/model/source/attempt-limit identity is bound to recovery. Successful MODEL_CHOICE
+events record model, chosen option, confidence, token count, accounted cost and receipt key;
+these are model preferences, not calibrated profit probabilities or generated explanations.
+
+**3. Tasks/tests (6-task scope; re-plan above 9):**
+
+| # | Task | Failing acceptance test | Status |
+| --- | --- | --- | --- |
+| 0 | Response/policy contract tests | duplicate and uncertain attempts, causal input, fail-closed behavior | [x] |
+| 1 | Durable per-run responses | crash/reopen reuse; mismatch/corruption/pending/limit rejection before network | [x] |
+| 2 | Jev candidate policy | only closed prefix submitted; ENTER/WAIT mapping; no risk override; unchanged protective exits | [x] |
+| 3 | Opt-in CLI and restart binding | resumed Jev replay reuses saved calls and rejects missing/replaced response store | [x] |
+| 4 | Evidence in existing cockpit | model choice and actual known inference cost visible in decision records | [x] |
+| 5 | Verify and publish | full lint/type/test gate; bounded synthetic integration; docs and draft PR updated | [x] |
+
+**4. Files/blast radius:** new `src/agents/responses.py` and `src/agents/policy.py`, replay
+CLI selection, cockpit record formatting, focused tests and documentation. No modification
+to risk arithmetic or budget settlement rules. SQLite schema is local, not Supabase/RLS.
+
+**5. Verification:** test-first pytest fixtures with mocked HTTP and real SQLite transactions;
+restart after a recorded response but before candle commit, pending ambiguity, request mismatch,
+corruption and run limits. Verify model failures keep stops active and requests contain no future
+candles. CLI integration uses recorded HTTP; a separate single synthetic live request can check
+credentials through the guarded connector. Regression gate remains ruff, strict mypy and pytest.
+No browser workaround; visual review stays pending. UI uses existing decision rows, no new flow.
+
+**6. Failure/scalability:** primary-key request lookup, <=100 attempts per run, bounded 21-bar
+payload, one SQLite connection, no in-memory response history. Pending claim uses BEGIN
+IMMEDIATE; simultaneous same-request calls cannot both claim. Replay journal owns single-writer
+execution. Network I/O never holds the response DB transaction. SQLite FULL durability.
+No retry after uncertain network/commit failure. Worst-case network latency remains the connector's
+bounded request timeout per eligible candidate; this is offline simulation, not real-time execution.
+Independent response and candle commits deliberately provide at-most-once attempt, not atomic
+exactly-once provider execution. Local disk access/transactions verified directly, not cloud MCPs.
+
+**7. Security/rollback:** store observations and sanitized validated responses only; never
+credentials, headers or raw exception text. Safe errors report why a candidate was vetoed.
+Response file permissions 0600; keep it with the journal and preserve it on rollback. Switch
+new runs back to baseline to disable model decisions; do not rewrite in-progress contracts.
+No auth/service/dependency changes. Existing framework landmines are mostly unrelated web
+patterns; applicable checks are state validation, error visibility, bounded work and causal data.
+
+**8. Limits:** changed code intentionally refuses old recovery contracts; start a new experiment
+or use the original revision. Local files/code are trusted, not tamper-proof. A lost store cannot
+be recreated to resume. Known successful inference costs exclude unresolved reservations; the
+shared budget ledger is the authoritative spending cap. No profitability, learning, exit-selection,
+scalping execution or decision-latency claim follows from this integration.
+
+**Evidence:** the initial tests failed because the response/policy modules were missing; CLI
+test failed before wiring the command. Integration tests cover ENTER/WAIT, next-open risk-checked
+fills, prefix-only requests, exits during provider failure, recorded-answer recovery after candle
+rollback and commit failure after provider success. A single real call on explicitly synthetic
+OHLCV returned WAIT from `jev-1.13.0`, with 1,885 input tokens and $0.000079170 cost. Total
+accounted monthly spending is $0.000093324, with no unresolved reservations. The synthetic
+journal stays under ignored `user_data/ai/` and is excluded from market-results reporting.
+Final gate: ruff clean, strict mypy clean across 49 source files, **139 passed / 17 pre-existing
+expected failures**. Published to the existing draft feature PR; no merge or deployment.
 
 ### 2026-09-30 continuation: replay recovery and daily measurement
 

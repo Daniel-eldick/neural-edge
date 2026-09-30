@@ -108,6 +108,7 @@ def load_journal(path: Path) -> Run:
     points: list[tuple[int, float]] = []
     details: deque[str] = deque(maxlen=50)
     wins = exits = 0
+    model_choices = policy_errors = 0
     total_points = 0
     stride = 1
     last_kind = ""
@@ -139,6 +140,15 @@ def load_journal(path: Path) -> Run:
             if last_kind == "EXIT":
                 exits += 1
                 wins += number(event["net_profit"]) > 0
+            if last_kind == "MODEL_CHOICE":
+                model_choices += 1
+                details.append(
+                    f'{date(event["time"])} · {event["symbol"]} · {event["model"]} '
+                    f'chose {event["choice"]} · inference '
+                    f'${count(event["cost_nano_usd"]) / 1e9:.9f}'
+                )
+            if last_kind == "POLICY_ERROR":
+                policy_errors += 1
             if last_kind in {"DECISION", "VETO", "POLICY_ERROR", "ENTER", "EXIT", "HALT"}:
                 reason = event.get("reason", event.get("error", "Drawdown halt"))
                 action = event.get("action", last_kind)
@@ -181,6 +191,9 @@ def load_journal(path: Path) -> Run:
         f'{total_points:,} recorded equity samples; {len(points):,} displayed. '
         'Last 50 decision/execution records shown. Ending equity includes open positions; '
         'future liquidation and AI operating costs are excluded. '
+        f'{model_choices} model choices recorded; {policy_errors} policy errors/vetoes. '
+        'Per-choice inference costs cover successful responses only; unresolved reservations '
+        'remain in the shared budget ledger. '
         'Daily Sharpe uses complete UTC days, sample standard deviation, zero risk-free '
         'return and sqrt(365) annualization; partial days are excluded. '
         'At least 30 complete days are required to display this descriptive statistic. '

@@ -5,8 +5,8 @@ Research project for an AI apprentice trader that learns selectively from histor
 **Start here: [Apprentice trader reference and plan](docs/active/APPRENTICE_TRADER_PLAN.md).**
 
 Status: offline replay includes causal observations, simulated accounting, risk enforcement,
-restart recovery and daily performance reporting. Jev connectivity is verified under the
-USD 3/month allowance. The AI trader, teacher and learning loop are still pending.
+restart recovery and daily performance reporting. Jev can filter simulated breakout candidates
+under the USD 3/month allowance. The broader AI trader, teacher and learning loop are still pending.
 Profitability is unproven.
 
 - [Documentation index](docs/README.md)
@@ -84,6 +84,28 @@ Pricing was verified 2026-09-30. New calls stop on 2026-11-01 until pricing is r
 The application guard covers calls made through this connector, not API spending in other
 applications, taxes or provider-side billing changes. It is not a TypeSafe account-level cap.
 
-The connection is verified; no trading policy calls Jev yet. The teacher, learned memory,
-controlled learning evaluation and online cockpit controls remain pending. A connection-check
-answer is not a trading result or evidence of profitable decisions.
+The experimental Jev filter is opt-in:
+
+```bash
+.venv/bin/python -m src.replay --csv candles.csv --journal user_data/ai/jev-run-001.sqlite --policy jev --max-model-calls 20
+```
+
+This makes paid calls for eligible 20-bar breakout candidates using only the most recent
+21 closed OHLCV bars and current portfolio. Jev can accept or decline the candidate; code
+still sets the 2% price stop / 4% target and enforces account-risk limits. This is an
+experimental filter, not a complete trader or a validated profitable strategy.
+
+The default is 20 attempts per run (configurable 1–100), within the shared monthly budget.
+Keep the generated `.responses.sqlite` file beside its replay journal. Resume with the same
+`--policy jev`, attempt limit, data and settings, adding `--resume`. Saved answers are reused
+without calling the provider again. Failed or uncertain requests veto that candidate and are
+never automatically retried. A lost or replaced response file cannot be recreated for resume.
+Protective exits continue during provider failures. New code versions intentionally refuse
+old recovery contracts; retain the original revision if an experiment must be resumed.
+
+The cockpit's decision records include model choices and successful inference costs; summary
+trading P&L excludes AI costs. Unresolved reservations remain in the authoritative budget ledger.
+The teacher, learned memory, controlled learning evaluation and online controls remain pending.
+One synthetic end-to-end check returned WAIT with one real Jev call (1,885 input tokens,
+$0.000079170). It verifies integration, not trading performance; it is excluded from the
+saved-market-results cockpit.
