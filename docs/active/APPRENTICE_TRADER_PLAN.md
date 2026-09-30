@@ -160,6 +160,47 @@ Further curriculum work remains assigned to the assistant:
 - Do not ingest pirated material or let later historical examples leak into earlier replay.
 - No paid course is selected or purchased by this plan.
 
+### 2026-09-30 requirement: recurring patterns and market context
+
+Daniel explicitly wants the apprentice to recognize recurring market patterns, including
+possible multi-year Bitcoin cycles. Record the proposed bull-market interpretation as a
+hypothesis, not a confirmed regime or a required trading bias. **Status: accepted product
+requirement; design/evaluation work pending, not implemented by the memory increment.**
+
+Current gap: the Jev candidate prompt contains only 21 closed base-interval bars (105 minutes
+at 5m). Memory retrieves recent same-run completed trade facts, not chart analogues or a
+multi-year market history. It cannot currently substantiate a four-year-cycle interpretation.
+
+Proposed bounded direction, to specify before implementation:
+- Add timestamped daily/weekly price-volume context alongside the intraday decision window.
+  Keep the agreed OHLCV-only inputs. Higher-timeframe candles must be completely closed at
+  the decision cutoff; insufficient history yields an explicit unknown state.
+- Define versioned trend, range and volatility descriptors using trailing data only. Normalize
+  using prior observations, not the whole dataset. A calendar interval alone cannot declare
+  a bull market. Similarity is not a calibrated probability or a trading permission.
+- Retrieve bounded earlier pattern examples, including failures and nonmatches, with their
+  dates, evidence and disconfirming conditions. Separate pattern shape from subsequent outcome;
+  retrieve an outcome only after its full evaluation horizon has elapsed. No overlapping
+  future labels, later peaks/troughs or unrestricted full-history search in model input.
+- Keep current independent runs isolated. Any future historical pattern library requires a
+  separately versioned training boundary and immutable provenance; it must not import prior
+  holdout outcomes into a later comparison. No new cross-run import is silently enabled.
+- First complete the predeclared memory-on/frozen comparison. Add context as a separate
+  controlled variant, with identical dates, data and execution costs; compare to cash and
+  buy-and-hold as well as the simple strategy. Include rising, falling and sideways windows
+  so rising-market exposure cannot masquerade as learning. Select rules and sample requirements
+  before examining evaluation results, preserve all trials, and ensure full candidate coverage.
+- A future cockpit view should show the dated market-state hypothesis, earlier analogues,
+  counterexamples and invalidation conditions. Follow UX design before this user-facing work;
+  no invented confidence percentage or growth score. Risk limits stay independent.
+
+Research context checked on 2026-09-30: [Coinbase's March 13, 2024 analysis](https://www.coinbase.com/en-de/institutional/research-insights/research/monthly-outlook/monthly-outlook-mar-2024)
+cautions that few prior halvings and changing market structure limit generalization.
+[Fidelity's February 24, 2026 analysis](https://fidelitydigitalassets.com/research-and-insights/bitcoins-four-year-cycle-over)
+examines divergence from past cycles. Neither establishes today's market regime or validates
+our pattern model. These are design references, not runtime lessons to backdate into a replay.
+No present bull-market classification was calculated in this review.
+
 ## 8. Evaluation and advancement
 
 User screening requirements: positive net profit, annualized Sharpe >1, drawdown <10%.
@@ -327,6 +368,17 @@ The initial documentation handoff used link/path and scope checks. Implementatio
 Source links support platform context. They do not establish that the apprentice will earn money. Curriculum selection and engine integration remain future work.
 
 ## Progress log
+
+### 2026-09-30: formal QA and recurring-pattern requirement
+
+[Full QA evidence](../reviews/2026-09-30_TEACHER_MEMORY_QA.md) now records the previously
+performed Standard code review and the newly completed Full QA pass: **PASS WITH WARNINGS**.
+177 tests pass; 17 pre-existing sensory xfails; strict types/lint clean. Exact tablet viewport
+and authenticated desktop/mobile interactions passed. Missing landmine registry and limited
+UI recovery guidance remain explicit warnings. No new model calls, source changes or merge.
+Recurring-pattern and multi-timeframe context requirements are recorded in section 7 above;
+the agent does not yet recognize long market cycles. Evaluation remains the next build gate.
+
 
 ### 2026-09-30: causal teacher and memory — complete / verified
 

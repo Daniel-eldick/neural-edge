@@ -8,3 +8,8 @@ Initial [foundation curriculum](curriculum/FOUNDATIONS.md) assembled: five verif
 sources and six lesson/exercise cards. Six separate runtime cards are now available to the
 opt-in memory policy only from 2026-09-30 UTC. Historical pilot runs remain memory-free.
 Measured learning and competency evaluation remain unfinished.
+
+Recurring market-pattern recognition is now an explicit requirement. Current Jev input is
+21 base-interval bars plus bounded trade memory; daily/weekly market context, chart-pattern
+retrieval and multi-cycle evaluation remain unimplemented. See the single plan's section 7.
+Formal [teacher/memory QA](reviews/2026-09-30_TEACHER_MEMORY_QA.md) passed with warnings.
