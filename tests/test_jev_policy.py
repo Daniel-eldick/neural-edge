@@ -253,3 +253,50 @@ def test_cli_context_symbol_mismatch_fails_before_creating_journal(
     with pytest.raises(ValueError, match="same single symbol"):
         cli.main()
     assert not path.exists()
+
+
+@pytest.mark.parametrize("mode", ["jev", "jev-memory", "jev-context"])
+def test_failed_run_blocks_later_candidates_after_checkpoint_resume(
+    tmp_path: Path, mode: str,
+) -> None:
+    from src.agents.contextual import ContextPolicy
+    from src.agents.market_context import MarketContext
+
+    class OnceFailingProvider(Provider):
+        def choose(self, state: str, instructions: str, options: dict[str, str]) -> Choice:
+            if not self.states:
+                self.states.append(json.loads(state))
+                raise JevError("Connection failed; reservation retained")
+            return super().choose(state, instructions, options)
+
+    data = [Candle("BTC", i * 300, p, p, p, p, 1)
+            for i, p in enumerate([100] * 20 + [101, 102, 103, 104])]
+    history = tmp_path / "daily.csv"
+    history.write_text("symbol,opened_at,open,high,low,close,volume\nBTC,0,100,100,100,100,1\n")
+    provider = OnceFailingProvider()
+    path, response_path = tmp_path / "run.sqlite", tmp_path / "responses.sqlite"
+    for resume in (False, True):
+        journal = Journal(path, resume=resume)
+        store = ResponseStore(response_path, resume=resume)
+        try:
+            policy: JevPolicy
+            if mode == "jev-context":
+                policy = ContextPolicy(provider, store, journal, interval=300,
+                                       market=MarketContext.from_csv(history))
+            elif mode == "jev-memory":
+                policy = LearningPolicy(provider, store, journal, interval=300)
+            else:
+                policy = JevPolicy(provider, store, journal)
+            result = Replay(Settings(), journal).run(
+                data, policy, resume=resume, stop_after=None if resume else 21,
+            )
+            assert len(provider.states) == 1
+            statuses = store.connection.execute("SELECT status FROM attempts").fetchall()
+            assert statuses == [("failed",)]
+        finally:
+            store.close()
+            journal.close()
+    assert result.closed_trades == result.open_positions == 0
+    assert not any(e["kind"] == "ENTER" for e in events(path))
+    assert load_journal(path).policy_errors == 4
+    assert "Incomplete test" in render([load_journal(path)])

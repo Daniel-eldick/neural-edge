@@ -15,7 +15,9 @@ memory mode narrowly beat frozen Jev twice and tied once, but only closed three 
 The simple baseline beat both in the first two windows. A subsequent
 [context screen](docs/research/CONTEXT_SCREEN_V1.md) completed three fresh 2022 comparisons:
 context Jev stayed in cash throughout, avoiding memory-only losses but matching cash.
-Profitability remains unproven.
+The subsequent [opportunity screen](docs/research/OPPORTUNITY_SCREEN_V1.md) stopped on a
+connection failure in its first context run; the comparison is incomplete. A durable failure
+gate now blocks further model requests for that run, including after restart. Profitability remains unproven.
 
 - [Documentation index](docs/README.md)
 - [Agent instructions](AGENTS.md)
@@ -53,7 +55,7 @@ Incomplete evaluation warnings remain visible. Memory runs report reviewed trade
 counts and the last review timestamp. The original pilot did not use memory. This remains a
 dated snapshot; live connection status, automatic updates and start/pause controls are pending.
 
-[Open the private online cockpit](https://neural-edge-cockpit-47dgm6f7s-daniel-eldicks-projects.vercel.app) and sign in with the Vercel account
+[Open the private online cockpit](https://neural-edge-cockpit-fnrbbq9de-daniel-eldicks-projects.vercel.app) and sign in with the Vercel account
 that owns this project. It uses your existing Vercel plan. Results update only when regenerated
 and redeployed. See [hosting and refresh instructions](docs/guides/COCKPIT_HOSTING.md).
 
@@ -172,15 +174,16 @@ unresolved historical-testing limitation.
 Pause/resume uses `--policy jev-memory` and the identical source/data/settings. Reviews,
 retrieval records and memory checkpoint commit with each candle. Recovery reconstructs
 and verifies memory from that run's journal; mismatched evidence or response stores fail
-before new provider calls. Integrity failures roll back the candle. Provider outages veto
-new decisions while existing protective exits continue.
+before new provider calls. Integrity failures roll back the candle. A failed or uncertain provider attempt blocks all new model requests in that response store,
+including after restart. Saved successful answers remain readable; existing protective exits continue.
 
 Correctness verification uses synthetic candles and recorded providers. The first actual
 [memory comparison screen](docs/research/MEMORY_SCREEN_V1.md) is complete; its report includes
 results, limits, costs and a read-only regeneration command (`python -m src.evaluation`).
 An opt-in daily/weekly context variant is now implemented and correctness-tested (below).
-The first context comparison is complete (below). Next: a fresh protocol that measures missed
-opportunities and covers broader market conditions, separating context from prompt effects.
+The first context comparison is complete (below). The fresh opportunity screen stopped after a
+provider failure; see its preserved evidence below. Next: resolve uncertain provider accounting,
+then establish a new frozen evaluation protocol that separates context from prompt effects.
 Recurring-pattern retrieval remains a separate unfinished capability. Larger studies and forward paper evaluation
 remain required. Daily unattended learning and an always-on worker are not implemented or started.
 
@@ -221,7 +224,7 @@ Implementation tests used recorded providers. The subsequent [actual context stu
 completed 173 paid requests for USD 0.035785470: all 88 context decisions waited; each
 memory-only account lost approximately 0.50%. Cash matched context trading performance
 without inference spending. All three periods declined; no profitable entry or rising-market
-ability was demonstrated. The private cockpit now retains 33 actual replay/reference records.
+ability was demonstrated. The private cockpit now retains 38 actual replay/reference records, including the failed screen below.
 Synthetic QA runs are not published.
 New source versions reject old unfinished checkpoints by design; use the original revision
 for those runs. Completed reports remain readable. See [context QA](docs/reviews/2026-09-30_MARKET_CONTEXT_QA.md).
@@ -230,3 +233,18 @@ To rebuild the three context comparisons without model calls, use `python -m src
 --with-context` with the three window directories and new JSON/HTML output paths; see the
 [study report](docs/research/CONTEXT_SCREEN_V1.md) for the complete command and provenance.
 The default evaluation mode still validates the earlier frozen-versus-memory study.
+
+
+## Opportunity screen and failure recovery
+
+The [four-window opportunity screen](docs/research/OPPORTUNITY_SCREEN_V1.md) was fixed before
+acquisition. February baseline and memory replays completed without policy errors; context
+had one connection failure. May/August/November trials were not started. The cockpit preserves
+February with an **Incomplete test** warning; it is not a valid paired-performance conclusion.
+
+Thirty-seven successful requests cost USD 0.007903602; one uncertain request retains its
+USD 0.003 reservation. Accounted monthly total is USD 0.079878438, leaving USD 2.920121562.
+The reservation remains unresolved; it has not been reset or treated as confirmed actual cost.
+No automatic retry. The failure exposed one later distinct call under the old policy; the new
+response-store gate prevents that continuation and survives reopening/checkpoint recovery.
+Old study results remain unchanged. See [review and QA](docs/reviews/2026-09-30_OPPORTUNITY_SCREEN_QA.md).

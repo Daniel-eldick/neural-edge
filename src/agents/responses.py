@@ -81,6 +81,16 @@ class ResponseStore:
                         return parse_response(json.loads(row[2]), options)
                     except (ValueError, JevError):
                         raise ResponseError("Saved model response is corrupt") from None
+                # A failed or uncertain request disables new model work for this run.
+                # Keep cached successes readable for replay recovery; claim inspection
+                # and insertion share the transaction so a second caller cannot race it.
+                if self.connection.execute(
+                    "SELECT 1 FROM attempts WHERE status != 'done' LIMIT 1"
+                ).fetchone() is not None:
+                    raise ResponseError(
+                        "Previous model attempt failed or uncertain; "
+                        "new requests blocked for this run"
+                    )
                 used = self.connection.execute("SELECT COUNT(*) FROM attempts").fetchone()[0]
                 if used >= max_attempts:
                     raise ResponseError("Run model-attempt limit reached; new candidates vetoed")

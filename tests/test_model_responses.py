@@ -100,11 +100,15 @@ def test_success_followed_by_disk_write_failure_remains_uncertain(tmp_path: Path
         """)
     with pytest.raises(ResponseError, match="persistence"):
         store.choose("BTC:300", "closed bars", "Choose", OPTIONS, provider, 20)
+    with pytest.raises(ResponseError, match="new requests blocked"):
+        store.choose("ETH:600", "different candidate", "Choose", OPTIONS, provider, 20)
     store.close()
     store = ResponseStore(path, resume=True)
     try:
         with pytest.raises(ResponseError, match="uncertain"):
             store.choose("BTC:300", "closed bars", "Choose", OPTIONS, provider, 20)
+        with pytest.raises(ResponseError, match="new requests blocked"):
+            store.choose("ETH:600", "different candidate", "Choose", OPTIONS, provider, 20)
         assert provider.calls == 1
     finally:
         store.close()
@@ -125,6 +129,55 @@ def test_concurrent_claim_cannot_call_provider_twice(tmp_path: Path) -> None:
     try:
         store.choose("BTC:300", "closed bars", "Choose", OPTIONS, provider, 20)
         assert provider.calls == 1
+    finally:
+        store.close()
+        other.close()
+
+
+@pytest.mark.parametrize("failure", [JevError("Provider unavailable"), SystemExit("crash")])
+def test_failure_blocks_new_keys_across_reopen_but_allows_cached_answers(
+    tmp_path: Path, failure: BaseException,
+) -> None:
+    path = tmp_path / "responses.sqlite"
+    provider = Provider()
+    store = ResponseStore(path)
+    answer = store.choose("BTC:300", "closed bars", "Choose", OPTIONS, provider, 20)
+    provider.failure = failure
+    with pytest.raises((ResponseError, SystemExit)):
+        store.choose("BTC:600", "next bars", "Choose", OPTIONS, provider, 20)
+    provider.failure = None
+    try:
+        for reopened in (False, True):
+            if reopened:
+                store.close()
+                store = ResponseStore(path, resume=True)
+            assert store.choose("BTC:300", "closed bars", "Choose", OPTIONS, provider, 20) == answer
+            with pytest.raises(ResponseError, match="new requests blocked"):
+                store.choose("ETH:900", "different candidate", "Choose", OPTIONS, provider, 20)
+            assert provider.calls == 2
+            assert store.connection.execute("SELECT COUNT(*) FROM attempts").fetchone()[0] == 2
+    finally:
+        store.close()
+
+
+def test_pending_claim_blocks_concurrent_distinct_candidate(tmp_path: Path) -> None:
+    path = tmp_path / "responses.sqlite"
+    store = ResponseStore(path)
+    other = ResponseStore(path, resume=True)
+    healthy = Provider()
+
+    class ConcurrentProvider(Provider):
+        def choose(self, state: str, instructions: str, options: dict[str, str]) -> Choice:
+            with pytest.raises(ResponseError, match="new requests blocked"):
+                other.choose("ETH:300", state, instructions, options, healthy, 20)
+            return super().choose(state, instructions, options)
+
+    try:
+        store.choose("BTC:300", "closed bars", "Choose", OPTIONS, ConcurrentProvider(), 20)
+        assert healthy.calls == 0
+        # A pending successful request is released normally after settlement.
+        other.choose("ETH:300", "closed bars", "Choose", OPTIONS, healthy, 20)
+        assert healthy.calls == 1
     finally:
         store.close()
         other.close()

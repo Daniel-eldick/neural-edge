@@ -291,8 +291,10 @@ the 100-attempt cap. Teacher/memory recovery and causal tests now pass. The firs
 [three-window memory screen](../research/MEMORY_SCREEN_V1.md) is complete with full coverage
 but inconclusive learning evidence. Causal daily/weekly context v1 is now implemented and
 correctness-tested. Its first real context screen matched cash by abstaining throughout.
-Next: broader market coverage and missed-opportunity evaluation under a fresh protocol,
-recurring-pattern design, then forward paper.
+The opportunity screen stopped on a first-window provider failure; its comparison is incomplete.
+A durable response-store failure gate is now correctness-tested. Next: resolve uncertain usage
+and freeze the next evaluation design; broader market coverage, prompt/content separation,
+recurring-pattern design and forward paper remain unfinished.
 
 ## 10. Background operation and cost control
 
@@ -378,7 +380,51 @@ Source links support platform context. They do not establish that the apprentice
 ## Progress log
 
 
-### 2026-09-30: opportunity screen v1 — protocol fixed before acquisition (0/4)
+### 2026-09-30: stop new model calls after a failed/uncertain attempt — complete / verified (3/3)
+
+A real connection failure in opportunity-screen-v1 vetoed that candidate, but the frozen
+policy subsequently sent one distinct later request. No failed request was retried. The study
+runner stopped later windows after the current replay finished. This is insufficient for
+unattended reliability; the comparison stays degraded, never rerun or reclassified as clean.
+
+Routine corrective continuation under existing implementation authorization. Standard review,
+Full QA. Three tasks: (1) add a durable per-response-store fail-closed gate before NEW requests;
+(2) test failed/interrupted/persistence-uncertain calls, later candidate and symbol attempts,
+successful cached replay, reopening and integration recovery/protective exits; (3) reconcile
+failed-study evidence and conservatively retained USD .003, publish warning, review and QA.
+
+Files: `src/agents/responses.py`, response/policy tests, this plan, research/QA and entrypoint
+docs. No model/prompt/risk changes, evaluator edits, retries, ledger settlement/reset or new
+paid trials. A failed or pending attempt prevents a new key from being inserted or calling
+provider. Existing successfully saved answers can be read for recovery. The existing SQLite
+transaction serializes inspection and new claims; failures remain durable across restart.
+Protective exits continue independently and POLICY_ERROR warnings stay visible. O(max100)
+local table inspection; no new dependency/API. Current run identities already fingerprint
+responses.py, so old replay resumes refuse changed policy source. Historical read-only reports
+remain usable. Do not settle the uncertain charge without provider usage evidence.
+
+Acceptance: regression tests fail first on original implementation, then pass; full lint/type/
+test gate and analytical review; no additional paid requests; unchanged study journal hashes;
+private-preview content/browser/auth checks. Mark incomplete market comparison separately
+from completion of this correctness repair. Future study needs a new frozen protocol.
+
+
+#### Completion evidence — 2026-09-30
+
+Durable gate implemented in `responses.py`; no prompt/risk/ledger changes. Failed regression
+on old source now passes, including new-key/symbol blocking, interrupted/persistence failures,
+cached success and three-policy checkpoint recovery. Ruff clean, mypy66 clean, **234 passed,
+17 existing xfails**. Independent fresh-eyes review approved scoped fix with27 focused tests.
+
+Failed-study artifacts and USD .003 reservation remain unchanged; no new paid call. Hosted
+snapshot retains38 records/eight comparisons with prominent incomplete-test warning; mobile,
+tablet, desktop, chart keyboard/click and disclosures passed. Authenticated bytes match local;
+anonymous302, READY preview, target null, no aliases. [Full QA](../reviews/2026-09-30_OPPORTUNITY_SCREEN_QA.md).
+The correctness repair is complete; the four-window performance comparison below is incomplete.
+Next: authoritative uncertain-usage reconciliation and a new frozen evaluation/forward-paper
+protocol. Keep research status and cumulative PR draft; no unattended worker or real orders.
+
+### 2026-09-30: opportunity screen v1 — stopped on provider failure; incomplete comparison
 
 Bounded continuation of Daniel's “keep going”: evaluate the cost of abstention using unchanged
 context+memory and memory-only Jev. Study ID `opportunity-screen-v1`. This extends the previous
@@ -424,6 +470,22 @@ reconciliation and complete research report; (4) publish all earlier plus new ev
 private cockpit, verify authenticated HTML bytes, mobile/desktop interactions and anonymous
 protection, update docs and the existing draft PR. Full source quality gate before commits;
 no new source/test changes planned. Preserve completed evidence and journal hashes.
+
+#### Actual execution outcome — stopped / no clean comparison
+
+Protocol committed at `2ce4894` before acquisition. All four datasets validated; raw bounds
+35/25/26/54. February baseline and memory completed cleanly; context recorded one provider
+connection failure and one subsequent distinct request under the old runtime. Runner stopped
+all later windows after that replay. No failed-key retry or replacement trial. The comparison
+validator rejects incomplete coverage. All original evidence is preserved.
+
+37 successful calls cost USD .007903602; one USD .003 uncertain reservation remains retained.
+Ledger increase .010903602 reconciled exactly; monthly accounted .079878438, remaining
+2.920121562. No further paid execution; no manual ledger change. Source hashes matched at
+study close before the separate reliability repair. Three later data-only windows remain unrun.
+Full [failure report](../research/OPPORTUNITY_SCREEN_V1.md) records every observation and limit.
+The planned four-window performance comparison is incomplete; this is not a negative/positive
+result to replace or erase. Publication and failure auditing continue under the repair above.
 
 ### 2026-09-30: context comparison screen v1 — complete / all-context abstention
 
