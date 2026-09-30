@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import sqlite3
 import zipfile
 from collections import deque
@@ -32,6 +33,10 @@ class Run:
     daily_sharpe: float | None = None
     complete_days: int | None = None
     sharpe_unavailable_reason: str = "Not reported"
+    comparison_key: str | None = None
+    model_choices: int | None = None
+    policy_errors: int | None = None
+    inference_cost_usd: float | None = None
 
     @property
     def net_return(self) -> float:
@@ -105,10 +110,12 @@ def load_journal(path: Path) -> Run:
     start: dict[str, Any] | None = None
     result: dict[str, Any] | None = None
     policy = "Unspecified policy"
+    dataset_hash: str | None = None
     points: list[tuple[int, float]] = []
     details: deque[str] = deque(maxlen=50)
     wins = exits = 0
     model_choices = policy_errors = 0
+    inference_nano_usd = 0
     total_points = 0
     stride = 1
     last_kind = ""
@@ -121,6 +128,9 @@ def load_journal(path: Path) -> Run:
                 raise ValueError(f"{path.name}: failed run; inspect its journal")
             if last_kind == "MANIFEST":
                 policy = str(event.get("policy", policy))
+                value = event.get("sha256")
+                if isinstance(value, str) and re.fullmatch(r"[a-f0-9]{64}", value):
+                    dataset_hash = value
             elif last_kind == "START":
                 if start is not None:
                     raise ValueError("Journal contains multiple runs")
@@ -142,6 +152,7 @@ def load_journal(path: Path) -> Run:
                 wins += number(event["net_profit"]) > 0
             if last_kind == "MODEL_CHOICE":
                 model_choices += 1
+                inference_nano_usd += count(event["cost_nano_usd"])
                 details.append(
                     f'{date(event["time"])} · {event["symbol"]} · {event["model"]} '
                     f'chose {event["choice"]} · inference '
@@ -180,6 +191,11 @@ def load_journal(path: Path) -> Run:
             raise ValueError("Missing or inconsistent daily Sharpe explanation")
     elif sharpe is not None:
         raise ValueError("Daily Sharpe requires a recorded sample length")
+    comparison_key = json.dumps([dataset_hash, settings, start["time"], result["time"]],
+                                sort_keys=True) if dataset_hash is not None else None
+    inference_known = model_choices > 0 or policy in {
+        "breakout-baseline-v1", "jev-breakout-filter-v1",
+    }
     return Run(
         policy, path.name, "Offline replay", f'{date(start["time"])} → {date(result["time"])}',
         number(result["starting_equity"], minimum=0.01),
@@ -200,6 +216,8 @@ def load_journal(path: Path) -> Run:
         'Learning comparisons are not available yet. '
         f'Run ended with risk halt: {"yes" if result["halted"] else "no"}.',
         sharpe, days, reasons.get(str(reason), "Not reported"),
+        comparison_key, model_choices, policy_errors,
+        inference_nano_usd / 1e9 if inference_known else None,
     )
 
 
@@ -240,6 +258,12 @@ def render(runs: list[Run]) -> str:
              else "Not reported"),
             ("Daily Sharpe", f"{run.daily_sharpe:.2f}" if run.daily_sharpe is not None
              else run.sharpe_unavailable_reason),
+            ("Model choices", str(run.model_choices) if run.model_choices is not None
+             else "Not reported"),
+            ("Policy errors", str(run.policy_errors) if run.policy_errors is not None
+             else "Not reported"),
+            ("Recorded AI cost (USD)", f"${run.inference_cost_usd:.9f}"
+             if run.inference_cost_usd is not None else "Not reported"),
         ]
         cards = "".join(f'<div><dt>{escape(k)}</dt><dd>{escape(v)}</dd></div>' for k, v in metrics)
         records = "".join(f"<li>{escape(row)}</li>" for row in run.details)
@@ -255,7 +279,39 @@ def render(runs: list[Run]) -> str:
             f'<details><summary>Evidence and assumptions</summary><p>{escape(run.note)}</p>'
             f'<p>Source: {escape(run.source)}</p></details></article>'
         )
-    body = "".join(sections) or (
+    groups: dict[str, list[Run]] = {}
+    for run in runs:
+        if run.comparison_key is not None:
+            groups.setdefault(run.comparison_key, []).append(run)
+    comparisons = []
+    for group in groups.values():
+        if len(group) < 2:
+            continue
+        rows = []
+        for run in group:
+            cost = (f"${run.inference_cost_usd:.9f}" if run.inference_cost_usd is not None
+                    else "Not reported")
+            values = [run.name, f"{run.net_return:+.3%}", f"{run.drawdown:.3%}",
+                      str(run.closed_trades), str(run.open_positions),
+                      str(run.model_choices), str(run.policy_errors), cost]
+            rows.append("<tr>" + "".join(f"<td>{escape(v)}</td>" for v in values) + "</tr>")
+        headers = ["Policy", "Trading return", "Drawdown", "Closed trades", "Open positions",
+                   "Model choices", "Policy errors", "Recorded AI cost (USD)"]
+        degraded = any(run.policy_errors for run in group)
+        comparisons.append(
+            '<article><h2>Same-input comparison</h2>'
+            f'<p class="muted">{escape(group[0].period)}</p>'
+            '<p>Matching input-file hash, period and execution settings. '
+            'Cash reference: 0% trading return. AI cost is separate from USDT trading P&amp;L; '
+            'unresolved reservations are not included in recorded successful-call costs.</p>'
+            + ('<p><strong>Degraded evaluation: policy errors or model limits occurred. '
+               'Do not interpret this as complete model coverage.</strong></p>' if degraded else '')
+            + '<div class="comparison"><table><thead><tr>'
+            + "".join(f"<th scope=\"col\">{escape(h)}</th>" for h in headers)
+            + '</tr></thead><tbody>' + "".join(rows) + '</tbody></table></div>'
+            '<p>A short comparison does not establish profitability or learning.</p></article>'
+        )
+    body = "".join(comparisons + sections) or (
         "<article><h2>No saved runs yet</h2><p>Import a completed replay journal "
         "or saved backtest to see actual results here.</p></article>"
     )

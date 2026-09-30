@@ -73,7 +73,10 @@ def test_model_mapping_causal_state_and_protective_exit(
         assert fills[0]["time"] == 6300
         assert float(str(fills[0]["planned_risk"])) <= 5
         assert any(e["kind"] == "EXIT" and e["reason"] == "gap_or_max_age" for e in rows)
-    page = render([load_journal(tmp_path / "run.sqlite")])
+    loaded = load_journal(tmp_path / "run.sqlite")
+    assert loaded.inference_cost_usd == 0.0000042 * len(provider.states)
+    assert loaded.model_choices == len(provider.states)
+    page = render([loaded])
     assert MODEL in page and "0.000004200" in page
 
 

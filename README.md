@@ -7,7 +7,8 @@ Research project for an AI apprentice trader that learns selectively from histor
 Status: offline replay includes causal observations, simulated accounting, risk enforcement,
 restart recovery and daily performance reporting. Jev can filter simulated breakout candidates
 under the USD 3/month allowance. The broader AI trader, teacher and learning loop are still pending.
-Profitability is unproven.
+The first [historical pilot](docs/research/BTC_WEEK_2024_06_PILOT.md) is complete, with
+incomplete Jev coverage after its predeclared attempt cap. Profitability remains unproven.
 
 - [Documentation index](docs/README.md)
 - [Agent instructions](AGENTS.md)
@@ -56,7 +57,27 @@ browser refresh alone does not update the snapshot. Input files are opened read-
 Missing, corrupt, failed or incomplete runs fail explicitly rather than showing a false
 success. The journal chart samples at most approximately 1,000 observations; its displayed
 range is not a substitute for the run's drawdown statistic. Decision details show the last
-50 records. No saved API configuration is included in the page.
+50 records. No saved API configuration is included in the page. Runs with matching input
+hashes, dates and execution settings get a comparison table. Policy errors/attempt exhaustion
+produce an explicit degraded-coverage warning. AI spending is shown in USD separately from
+trading returns in USDT. The generated results page is `user_data/cockpit/index.html`;
+`src/cockpit/template.html` is only the template and has no saved results.
+
+To regenerate the first historical comparison:
+
+```bash
+.venv/bin/python -m src.cockpit --journal user_data/research/btc-week-2024-06-v1/baseline.sqlite --journal user_data/research/btc-week-2024-06-v1/jev.sqlite
+```
+
+To prepare a new dataset from an existing Binance spot monthly archive and its downloaded
+official checksum, use new output paths (existing files are never overwritten):
+
+```bash
+.venv/bin/python -m src.replay.dataset --archive BTCUSDT-5m-2024-06.zip --checksum BTCUSDT-5m-2024-06.zip.CHECKSUM --symbol BTC/USDT --start 2024-06-01 --end 2024-06-08 --output candles.csv
+```
+
+The importer validates the source hash, timestamp units, OHLCV, candle close times and exact
+contiguous coverage. It writes a CSV and adjacent provenance manifest without repairing data.
 
 ## Jev connection and AI allowance
 

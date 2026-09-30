@@ -16,6 +16,33 @@ from src.cockpit.report import load_archive, load_journal, render
 from src.replay.engine import Candle, Decision, Observation, Replay, Settings
 from src.replay.journal import Journal
 
+
+@pytest.mark.parametrize("difference", [None, "data", "fee", "dates", "error"])
+def test_only_matching_inputs_are_compared(tmp_path: Path, difference: str | None) -> None:
+    class WaitPolicy:
+        def decide(self, observation: Observation) -> Decision:
+            if difference == "error":
+                raise ValueError("Model allowance exhausted")
+            return Decision()
+
+    runs = []
+    for index in range(2):
+        path = tmp_path / f"run-{index}.sqlite"
+        journal = Journal(path)
+        journal.record({"kind": "MANIFEST", "policy": "breakout-baseline-v1",
+                        "sha256": ("b" if index and difference == "data" else "a") * 64})
+        settings = Settings(fee=0 if index and difference == "fee" else .001)
+        start = 300 if index and difference == "dates" else 0
+        Replay(settings, journal).run([Candle("BTC", start, 100, 100, 100, 100, 1)], WaitPolicy())
+        journal.close()
+        runs.append(load_journal(path))
+    page = render(runs)
+    assert ("Same-input comparison" in page) == (difference in (None, "error"))
+    assert ("Degraded evaluation" in page) == (difference == "error")
+    assert "Recorded AI cost (USD)" in page
+    assert "Policy errors" in page
+    assert runs[0].inference_cost_usd == 0
+
 if TYPE_CHECKING:
     from pathlib import Path
 

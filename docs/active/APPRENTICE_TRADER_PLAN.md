@@ -85,7 +85,8 @@ Model selection remains open:
   behind a decision-support interface and benchmark it before granting decision influence.
   API connectivity is verified under the USD 3/month allowance (2026-09-30).
   An opt-in experimental breakout filter now calls it during offline replay. One synthetic
-  end-to-end check passed; its decision quality on real markets remains unvalidated.
+  end-to-end check and first historical pilot completed. The pilot had incomplete coverage;
+  its decision quality on real markets remains unvalidated.
 - Do not interpret classification confidence as probability of profitable return without calibration.
 - Chart images are an optional controlled experiment; numerical input is the proposed baseline.
 - No claim that chart recognition reveals actual participant psychology.
@@ -235,8 +236,10 @@ Limits of this increment:
 
 P1/P2 are partial: simulation, admission enforcement and offline restart recovery exist;
 realistic exchange execution remains unfinished. P3 includes a Jev breakout filter with durable
-recorded responses; broader trader/teacher decisions remain pending. Next work: predeclared
-real-market baseline comparisons and a teacher/memory adapter with causal retrieval tests.
+recorded responses; broader trader/teacher decisions remain pending. The first historical pilot
+is recorded in `docs/research/BTC_WEEK_2024_06_PILOT.md`, with 11 unevaluated candidates after
+the 100-attempt cap. Next work: predeclared full-coverage multi-window comparisons and a
+teacher/memory adapter with causal retrieval tests.
 
 ## 10. Background operation and cost control
 
@@ -278,6 +281,74 @@ The initial documentation handoff used link/path and scope checks. Implementatio
 Source links support platform context. They do not establish that the apprentice will earn money. Curriculum selection and engine integration remain future work.
 
 ## Progress log
+
+### 2026-09-30 continuation: first fixed historical comparison
+
+**Status: IMPLEMENTED. Tier: Standard — local dataset import/reporting using existing paid
+inference and durable replay boundaries.** Continuation authorized by Daniel. No deployment,
+worker or real trades. No parameter/prompt tuning from this pilot.
+
+**1. Purpose:** run the frozen breakout baseline and Jev filter on identical real historical
+data, publish actual results to the local cockpit, and expose any insufficient coverage.
+
+**2. Predeclared protocol (before viewing outcomes):** BTC/USDT spot, five-minute candles,
+2024-06-01 00:00 UTC inclusive to 2024-06-08 00:00 UTC exclusive; $1,000 simulated cash;
+0.1% fee per side and 0.1% adverse slippage per fill, current unchanged risk governor,
+2% stop/4% target and 20-bar breakout. Both policies start empty with the same 21-bar warmup.
+This period overlaps old baseline research and is explicitly development data, not sealed
+validation or holdout. Frozen implementation starts at `0c84bc1`; only importer/reporting
+changes are allowed before these runs. No learning/teacher is enabled. Baseline has no AI;
+Jev uses `jev-1.13.0`, max 100 attempts (maximum $0.30 reservation, inside USD 3/month).
+If API/limit errors occur, label comparison degraded and do not claim full Jev evaluation.
+Do not extend the window or change parameters to improve outcomes. Report open positions
+without fictional liquidation, daily sample length and unavailable Sharpe below 30 days.
+Trading P&L includes fees/slippage. Report AI spending separately in USD (trading unit USDT),
+reconcile all this run's successful calls to the budget delta and disclose unresolved calls.
+Cash reference is zero return; buy-and-hold/other regimes remain later predeclared studies.
+
+Source: existing Binance monthly ZIP, verified against its official SHA-256 CHECKSUM before
+use. [Official format/checksum documentation](https://github.com/binance/binance-public-data)
+defines spot klines and the 2025 switch from millisecond to microsecond timestamps. Import
+only the selected period; validate exact contiguous 5m coverage, OHLCV and close times. No
+interpolation, padding or future candles. Preserve raw data; new CSV + provenance manifest.
+
+UX: existing saved-results page gains comparable-run summary rows and explicit model-cost/error
+counts. Reader sees performance, sample/coverage limits and source evidence in one place.
+No new controls or simulated live status. Missing provenance prevents automatic comparison.
+
+**3. Tasks (5; re-plan above 7):**
+- [x] Test-first checksum-verified Binance import; missing/duplicate/misaligned bars reject.
+- [x] Test-first matched-input comparison with costs/error visibility; unmatched runs separate.
+- [x] Verify source and freeze CSV/provenance; run baseline and bounded Jev once each.
+- [x] Reconcile responses/spending; generate cockpit and concise permanent experiment record.
+- [x] Full lint/type/tests; commit and update existing draft PR with actual results/limits.
+
+**4. Files:** `src/replay/dataset.py`, `src/cockpit/report.py`/template, focused tests,
+README/status/this plan and a saved experiment report. Generated data/journals stay ignored.
+Existing risk code, Jev prompt, budget and response persistence remain unchanged.
+
+**5. Verification/failures:** checksum/format fixtures (ms/us), full coverage and read-only
+source preservation; cockpit matches only same input hash, dates and execution settings.
+Legacy unknown cost stays unavailable; policy errors are visible. Real runs execute serially,
+within the existing budget guard; no retry of ambiguous calls. A stopped run can resume.
+Importer reads at most 64 MiB uncompressed, writes only new paths, and records content hashes.
+Existing project test suite is the regression gate; visual browser restriction remains respected.
+
+**6. Rollback/limits:** no destructive migration or new service; preserve all experiment files.
+One asset/week has insufficient evidence for profitability or learning; pretraining contamination,
+coarse candle execution, zero modeled decision latency and open-position marks remain limitations.
+Output after AI cost is not mislabeled in USDT without an explicit FX assumption. Research may
+show no advantage; report it without adjusting the test or interpreting abstention as learning.
+
+**Actual evidence:** [pilot report](../research/BTC_WEEK_2024_06_PILOT.md). Baseline +0.062385%
+marked return (7 closed / 1 open); capped Jev +0.178587% (2 closed / 0 open), with 98 WAIT,
+2 ENTER and 11 unevaluated candidates after the cap. No provider failures or unresolved
+reservations. All 100 response costs reconcile to the USD 0.009907590 budget increase.
+No cap/window/prompt change or rerun after viewing outcomes. Seven full days is below the
+Sharpe reporting threshold. Cockpit prominently labels the degraded comparison; no promotion.
+Verification: ruff clean; strict mypy clean across 51 files; **151 passed / 17 pre-existing
+expected failures**. Generated HTML content and documentation links checked. Visual browser
+verification remains pending. Results/implementation published to the existing draft PR.
 
 ### 2026-09-30 continuation: Jev replay decisions with durable responses
 
