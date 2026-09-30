@@ -157,3 +157,17 @@ def test_drawdown_axis_cannot_imply_positive_drawdown() -> None:
     assert ">0%</text>" in html
     assert ">+" not in html
     assert "-0.4%" in html
+
+
+def test_memory_chart_prefers_frozen_control_and_labels_window(tmp_path: Path) -> None:
+    path = tmp_path / 'journal.sqlite'
+    recorded_run(path)
+    frozen = load_journal(path)
+    baseline = replace(frozen, name='breakout-baseline-v1')
+    memory = replace(frozen, name='jev-memory-filter-v1')
+    page = render([baseline, frozen, memory])
+    overview = page.split('<details class="evidence"')[0]
+    assert 'Return vs frozen Jev' in overview
+    assert 'Simple strategy' not in overview
+    assert 'Jev agent' in overview and 'Jev with memory' in overview
+    assert 'Same-input comparison · 1970-01-01' in page

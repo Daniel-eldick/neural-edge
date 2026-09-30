@@ -269,7 +269,7 @@ def load_journal(path: Path) -> Run:
         'Daily Sharpe uses complete UTC days, sample standard deviation, zero risk-free '
         'return and sqrt(365) annualization; partial days are excluded. '
         'At least 30 complete days are required to display this descriptive statistic. '
-        'Learning comparisons are not available yet. '
+        'Learning improvement is not established by this run. '
         f'Run ended with risk halt: {"yes" if result["halted"] else "no"}.',
         sharpe, days, reasons.get(str(reason), "Not reported"),
         comparison_key, model_choices, policy_errors,
@@ -374,10 +374,11 @@ def render(runs: list[Run]) -> str:
                  else "No matured trades yet"),
             ])
         records = "".join(f"<li>{escape(row)}</li>" for row in run.details)
+        window = f" · {date(run.started_at)[:10]}" if run.started_at is not None else ""
         sections.append(
             f'<details class="run-detail" id="run-{index}"><summary>'
             f'{escape(display_name(run))} <span class="muted">· {escape(run.kind)} '
-            f'· {run.net_return:+.2%}'
+            f'· {run.net_return:+.2%}{escape(window)}'
             + (' · Incomplete test' if run.policy_errors else '')
             + '</span></summary><div class="detail-body">'
             f'<h3>{escape(run.name)}</h3><p class="muted">{escape(run.period)}</p>'
@@ -406,8 +407,10 @@ def render(runs: list[Run]) -> str:
             rows.append("<tr>" + "".join(f"<td>{escape(v)}</td>" for v in values) + "</tr>")
         headers = ["Policy", "Trading return", "Drawdown", "Closed trades", "Open positions",
                    "Model choices", "Policy errors", "Recorded AI cost (USD)"]
+        window = (date(group[0].started_at)[:10] if group[0].started_at is not None
+                  else "full metrics")
         comparisons.append(
-            '<details><summary>Same-input comparison · full metrics</summary>'
+            f'<details><summary>Same-input comparison · {escape(window)}</summary>'
             f'<p class="muted">{escape(group[0].period)}</p>'
             '<p>Matching input-file hash, period and execution settings. '
             'Cash reference: 0% trading return. AI cost is separate from USDT trading P&amp;L; '
@@ -422,7 +425,7 @@ def render(runs: list[Run]) -> str:
         '<details class="evidence" id="evidence"><summary>'
         f'All experiments &amp; evidence <span class="muted">({len(runs)} saved runs)</span>'
         '</summary><div class="detail-body">' + ''.join(sections + comparisons)
-        + '<p class="muted">Learning not evaluated. '
+        + '<p class="muted">Learning improvement unproven. '
         'Saved results do not monitor a running agent.</p>'
         '</div></details>'
     ) if runs else ''

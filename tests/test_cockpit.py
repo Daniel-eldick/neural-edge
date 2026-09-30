@@ -73,7 +73,7 @@ def test_archive_metrics_are_not_presented_as_learning_or_fake_equity(tmp_path: 
     assert run.equity == []
     page = render(runs)
     assert "NEVER-DISPLAY-ME" not in page
-    assert "Learning not evaluated" in page
+    assert "Learning improvement unproven" in page
     assert "Legacy baseline" in page
     assert "No recorded equity curve" in page
     assert hashlib.sha256(path.read_bytes()).hexdigest() == before

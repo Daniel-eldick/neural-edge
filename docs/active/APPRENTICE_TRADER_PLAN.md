@@ -283,8 +283,10 @@ P1/P2 are partial: simulation, admission enforcement and offline restart recover
 realistic exchange execution remains unfinished. P3 includes a Jev breakout filter with durable
 recorded responses and opt-in causal memory; broader trader/generative teacher decisions remain pending. The first historical pilot
 is recorded in `docs/research/BTC_WEEK_2024_06_PILOT.md`, with 11 unevaluated candidates after
-the 100-attempt cap. Teacher/memory recovery and causal tests now pass. Next work:
-predeclared full-coverage multi-window memory-on/frozen comparisons, then forward paper.
+the 100-attempt cap. Teacher/memory recovery and causal tests now pass. The first
+[three-window memory screen](../research/MEMORY_SCREEN_V1.md) is complete with full coverage
+but inconclusive learning evidence. Next: causal daily/weekly context and recurring-pattern
+design, fresh predeclared evaluation, then forward paper.
 
 ## 10. Background operation and cost control
 
@@ -369,7 +371,7 @@ Source links support platform context. They do not establish that the apprentice
 
 ## Progress log
 
-### 2026-09-30: memory comparison screen v1 — authorized / protocol frozen before data
+### 2026-09-30: memory comparison screen v1 — complete / protocol frozen before data
 
 Implementation and bounded paid inference are authorized by Daniel's continuation and existing
 USD 3/month limit. Using the planning skill, **Full tier** for offline evaluation integrity.
@@ -422,20 +424,23 @@ by predeclared input order (the last eligible window), not the best-performing w
 the original pilot evidence. No new controls or status that implies an operating worker.
 
 #### 3. Tasks and failing tests (six; reassess above nine)
-- [ ] 0. Write failing tests for raw-candidate bound, exact benchmark fee/slippage/warmup and
+- [x] 0. Write failing tests for raw-candidate bound, exact benchmark fee/slippage/warmup and
   integrity rejection (mismatched dates/hash/settings, failed/incomplete comparison).
-- [ ] 1. Implement small read-only evaluation helpers and reproducible report entry point.
-- [ ] 2. Acquire/verify the fixed windows, record source/CSV hashes and preflight bounds.
-- [ ] 3. Run eligible comparisons once through the existing shared ledger and durable receipts;
+- [x] 1. Implement small read-only evaluation helpers and reproducible report entry point.
+- [x] 2. Acquire/verify the fixed windows, record source/CSV hashes and preflight bounds.
+- [x] 3. Run eligible comparisons once through the existing shared ledger and durable receipts;
   reconcile usage exactly, retain errors and unfinished windows if stopping is required.
-- [ ] 4. Save the full report and publish the selected actual results to the private cockpit.
-- [ ] 5. Code review, QA, full gate, original-evidence integrity check, documentation and PR.
+- [x] 4. Save the full report and publish the selected actual results to the private cockpit.
+- [x] 5. Code review, QA, full gate, original-evidence integrity check, documentation and PR.
 
 #### 4. Files / blast radius
 Add `src/evaluation/` and `tests/test_evaluation.py`; read existing Replay, Journal, ResponseStore,
 DailyPerformance and cockpit Run/render interfaces. Extend no trading policy or risk logic.
 Store protocol/result report in `docs/research/`; datasets/journals/response files remain ignored
 under `user_data/research/memory-screen-v1/`. Reuse the existing protected static preview.
+Small presentation changes in `src/cockpit/{report.py,visuals.py,template.html}` and existing
+cockpit tests prioritize frozen Jev for memory charts, date disclosure summaries, and label
+learning improvement unproven. These implement the existing UX brief without new controls.
 
 #### 5. Verification
 Test-first: no helper implementation before failing tests. Exact hand-calculated reference
@@ -462,6 +467,25 @@ candle execution cannot validate a market cycle or establish learning edge. Exog
 controls have different exposure/risk from the bot. No new recurring-pattern engine or daily
 worker is included. Missing landmine registry stays disclosed; Supabase/npm guidance is N/A.
 
+
+#### Completion evidence — 2026-09-30
+
+**This increment: 6/6 tasks, 100%; not overall product completion.** Protocol commit `698a714`
+preceded acquisition. All nine replay runs completed once, with zero policy errors or capped
+candidates. Six paid variants used 223 successful requests costing USD 0.023188452, exactly
+reconciled to the unchanged shared ledger. No pending reservations. Monthly total USD
+0.033189366; remaining USD 2.966810634. Decision/risk/replay source hashes and original pilot
+journals remained unchanged. Completed study journals and receipts also retained their hashes.
+
+Memory minus frozen return: +0.047625, +0.083181 and 0 percentage points. Only three closed
+memory trades; simple breakout beat both Jev modes in the first two windows. No edge or
+learning promotion. See [full result and provenance](../research/MEMORY_SCREEN_V1.md).
+
+[Code review and Full QA](../reviews/2026-09-30_MEMORY_SCREEN_QA.md): 190 passed, 17 existing
+expected failures; ruff and mypy clean (61 files). Four integrity/reporting findings corrected
+in three rounds with independent re-review. Authenticated desktop/tablet/phone checks passed;
+private hosted HTML equals the local report. Eighteen saved replay/reference records retained.
+No new dependency, risk-rule change, worker, live order or main promotion.
 
 ### 2026-09-30: formal QA and recurring-pattern requirement
 

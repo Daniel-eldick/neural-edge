@@ -9,7 +9,10 @@ restart recovery and daily performance reporting. Jev can filter simulated break
 under the USD 3/month allowance. An opt-in evidence teacher now reviews closed trades and
 provides causal, same-run memory to Jev. Improved performance is not yet demonstrated.
 The first [historical pilot](docs/research/BTC_WEEK_2024_06_PILOT.md) is complete, with
-incomplete Jev coverage after its predeclared attempt cap. Profitability remains unproven.
+incomplete Jev coverage after its predeclared attempt cap. The subsequent
+[three-window memory screen](docs/research/MEMORY_SCREEN_V1.md) completed with full coverage:
+memory mode narrowly beat frozen Jev twice and tied once, but only closed three trades.
+The simple baseline beat both in the first two windows. Profitability remains unproven.
 
 - [Documentation index](docs/README.md)
 - [Agent instructions](AGENTS.md)
@@ -47,7 +50,7 @@ Incomplete evaluation warnings remain visible. Memory runs report reviewed trade
 counts and the last review timestamp. The original pilot did not use memory. This remains a
 dated snapshot; live connection status, automatic updates and start/pause controls are pending.
 
-[Open the private online cockpit](https://neural-edge-cockpit-16pe3ge3m-daniel-eldicks-projects.vercel.app) and sign in with the Vercel account
+[Open the private online cockpit](https://neural-edge-cockpit-d0gfjuguh-daniel-eldicks-projects.vercel.app) and sign in with the Vercel account
 that owns this project. It uses your existing Vercel plan. Results update only when regenerated
 and redeployed. See [hosting and refresh instructions](docs/guides/COCKPIT_HOSTING.md).
 
@@ -137,7 +140,7 @@ old recovery contracts; retain the original revision if an experiment must be re
 
 The cockpit's decision records include model choices and successful inference costs; summary
 trading P&L excludes AI costs. Unresolved reservations remain in the authoritative budget ledger.
-Controlled learning evaluation, a generative teacher and online controls remain pending.
+Robust learning evaluation, a generative teacher and online controls remain pending.
 One synthetic end-to-end check returned WAIT with one real Jev call (1,885 input tokens,
 $0.000079170). It verifies integration, not trading performance; it is excluded from the
 saved-market-results cockpit.
@@ -169,7 +172,9 @@ and verifies memory from that run's journal; mismatched evidence or response sto
 before new provider calls. Integrity failures roll back the candle. Provider outages veto
 new decisions while existing protective exits continue.
 
-Verification uses synthetic candles and recorded providers, not performance evidence.
-Next: predeclare unseen comparison windows for memory-on, frozen Jev and simple controls,
-with full candidate coverage and costs. Then forward paper evaluation. Daily unattended
-learning and an always-on worker are not implemented or started.
+Correctness verification uses synthetic candles and recorded providers. The first actual
+[memory comparison screen](docs/research/MEMORY_SCREEN_V1.md) is complete; its report includes
+results, limits, costs and a read-only regeneration command (`python -m src.evaluation`).
+Next: design causal daily/weekly context and recurring-pattern evidence, then evaluate that
+separate feature on fresh predeclared windows. Larger studies and forward paper evaluation
+remain required. Daily unattended learning and an always-on worker are not implemented or started.

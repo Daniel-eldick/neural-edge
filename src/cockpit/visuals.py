@@ -149,8 +149,12 @@ def performance(run: Run, matching: list[Run]) -> str:
     candidates = [
         other for other in matching if other is not run and other.name != run.name and other.equity
     ]
-    others = sorted(candidates, key=lambda item: item.name != "breakout-baseline-v1")[:1]
+    preferred = ("jev-breakout-filter-v1" if run.name == "jev-memory-filter-v1"
+                 else "breakout-baseline-v1")
+    others = sorted(candidates, key=lambda item: item.name != preferred)[:1]
     view_label = "Return vs baseline" if others else "Trading return"
+    if others and run.name == "jev-memory-filter-v1" and others[0].name == preferred:
+        view_label = "Return vs frozen Jev"
     series = []
     for index, item in enumerate([run, *others]):
         points = list(item.equity)
