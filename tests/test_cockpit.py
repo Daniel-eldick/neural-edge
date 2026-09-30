@@ -7,6 +7,7 @@ import json
 import sqlite3
 import sys
 import zipfile
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 import pytest
@@ -191,3 +192,40 @@ def test_cli_generates_empty_or_real_snapshot(
     monkeypatch.setattr(sys, "argv", ["cockpit", "--archive", str(path), "--output", str(output)])
     main()
     assert "AlphaStrategy" in output.read_text()
+
+
+def test_overview_focuses_jev_not_the_best_return_and_keeps_warning_visible(tmp_path: Path) -> None:
+    path = tmp_path / "archive.zip"
+    archive(path)
+    baseline = load_archive(path)[0]
+    agent = replace(baseline, name="jev-breakout-filter-v1", ending_equity=980,
+                    policy_errors=11, inference_cost_usd=.009907590)
+    page = render([agent, replace(baseline, ending_equity=1200)])
+    overview = page.split('<details class="evidence"')[0]
+    assert "Jev agent" in overview
+    assert "-2.00%" in overview
+    assert "+20.00%" not in overview
+    assert "Incomplete test" in overview and "11 candidate evaluations" in overview
+    assert overview.count("<dt>") == 4
+    assert "Not live" in overview
+    assert "Daily Sharpe" not in overview
+    assert "Teacher &amp; memory not active" in overview
+    assert "<details open" not in page
+    assert "Recorded AI cost (USD)" in page
+    assert "$0.009907590" in page
+
+
+def test_overview_fallback_and_untrusted_names_remain_safe(tmp_path: Path) -> None:
+    path = tmp_path / "archive.zip"
+    archive(path)
+    run = replace(load_archive(path)[0], name="<script>unsafe</script>")
+    page = render([run])
+    overview = page.split('<details class="evidence"')[0]
+    assert "&lt;script&gt;unsafe&lt;/script&gt;" in overview
+    assert "<script>" not in page
+    assert "Incomplete test" not in overview
+    assert "How does it compare?" not in overview
+    assert "Unknown" in overview
+    empty = render([])
+    assert "No saved runs yet" in empty
+    assert "<dt>" not in empty

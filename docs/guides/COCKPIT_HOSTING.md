@@ -3,10 +3,10 @@
 Verified 2026-09-30. This hosts a dated results snapshot only. Trading, teacher/memory,
 background execution, controls and automatic publishing are not hosted here.
 
-- [Open cockpit](https://neural-edge-cockpit-auhm09y2p-daniel-eldicks-projects.vercel.app) — sign in with the Vercel account that owns the project.
+- [Open cockpit](https://neural-edge-cockpit-n7m5x9tlh-daniel-eldicks-projects.vercel.app) — sign in with the Vercel account that owns the project.
 - [Manage project](https://vercel.com/daniel-eldicks-projects/neural-edge-cockpit)
 - Scope: `daniel-eldicks-projects`; project: `prj_sphrTaxgCiGWvkTZhtzQ8GtUCcj2`.
-- Preview: `dpl_CeJjyUx4jXphuxPY13Wfcgm9F48q`; READY, preview target, no aliases.
+- Preview: `dpl_AXiNNG5NAVmPh7cTDBM4KZt6hfaG`; READY, preview target, no aliases.
 - Authentication: standard Vercel protection, `prod_deployment_urls_and_all_previews`.
 - Uses the existing Pro account, with no plan upgrade, add-on, functions or database.
   Static hosting consumes the account's normal usage allowance; this is not a separate
@@ -24,10 +24,12 @@ background execution, controls and automatic publishing are not hosted here.
 4. Use a staging `.vercelignore` containing `*`, `!index.html`, `!vercel.json` on separate
    lines. Verify `.vercel/project.json` matches the project and scope above. Check project
    protection still equals `prod_deployment_urls_and_all_previews` before uploading.
-5. Run `vercel deploy --target preview --skip-domain --yes --scope daniel-eldicks-projects`.
+5. Run `vercel deploy --target preview --yes --scope daniel-eldicks-projects`.
    Verify the returned deployment is READY, is not production, and has no public aliases.
    CLI 59.3.0 unexpectedly promoted the first upload despite `--target preview`; that
-   deployment and alias were removed. Do not trust CLI intent without checking the result.
+   deployment and alias were removed. Do not trust CLI intent without checking the result. `--skip-domain` is rejected for
+   previews by CLI 59.3.0; it cannot be used as a preview safeguard. For any new project,
+   validate deployment behavior with an empty non-sensitive page before uploading results.
 6. Anonymous access must redirect to Vercel login and contain no report data. From the linked
    directory, use `vercel curl / --deployment <preview-url> --scope daniel-eldicks-projects
    -- --silent -H x-vercel-skip-toolbar:1 --output /private/tmp/cockpit-verified.html` and

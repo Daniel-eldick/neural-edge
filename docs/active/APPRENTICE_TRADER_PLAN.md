@@ -297,7 +297,9 @@ created `neural-edge-cockpit.vercel.app`. Its alias was removed immediately, ver
 and the initial deployment was deleted after the replacement preview was READY. The alias
 may have exposed the generated report briefly; access during that interval was not audited.
 The upload contained only the static report/config, never tokens or databases. Future deploys
-must also use `--skip-domain` and verify returned target/aliases, not trust the requested flag.
+must verify returned target/aliases, not trust the requested flag. Subsequent testing showed
+`--skip-domain` is rejected for previews; new projects must first validate hosting behavior
+with an empty non-sensitive page before uploading results.
 No Git branch was merged or promoted. Existing Pro account used without upgrade or add-on.
 
 Rollback: delete the preview/project via the Vercel dashboard if needed; local journals and
@@ -324,6 +326,57 @@ The initial documentation handoff used link/path and scope checks. Implementatio
 Source links support platform context. They do not establish that the apprentice will earn money. Curriculum selection and engine integration remain future work.
 
 ## Progress log
+
+### 2026-09-30: cockpit scan-first redesign — implemented and published
+
+Daniel explicitly asked for less reading and a more intuitive cockpit. This authorizes the
+presentation update and refresh of the existing private preview. No new runtime controls.
+
+Verified: ruff clean; strict mypy clean (51 source files); **153 passed / 17 pre-existing
+expected failures**. Regression checks protect Jev-first selection (not best-return selection),
+standalone incomplete-test warnings, four headline metrics, XSS escaping, fallback and empty
+states. Native closed details preserve full precision/records. Default visible text reduced
+from 556 to 175 words (69%, excluding collapsed details and CSS). No trading logic changed.
+
+Updated preview: https://neural-edge-cockpit-n7m5x9tlh-daniel-eldicks-projects.vercel.app
+Deployment `dpl_AXiNNG5NAVmPh7cTDBM4KZt6hfaG`: READY, preview target, no aliases.
+Anonymous HTTP 302 to login; authenticated HTTP 200, exact generated HTML SHA256
+`53647360ad9f191d9492ddfe4c585079db2aed91c970950191b7646940258d6c`. Browser reaches login; layout review remains
+pending authenticated browser access. The original preview remains available for rollback.
+No credentials, databases, new dependencies, paid inference or worker added.
+
+UX brief: Daniel checks progress quickly on desktop or phone. First answer: is this live,
+what did the selected Jev experiment return, what needs attention, and is learning active?
+Journey: open → scan status/four numbers/chart → optionally expand records. Empty state
+invites importing a completed run; incomplete imports still fail loudly. Offline snapshots
+remain usable and visibly dated. No loading state or fake operational buttons.
+
+Wireframe:
+```
+NEURALEDGE                              Saved snapshot · date
+Your agent, at a glance.                 Research only · Not live
+[Return] [Biggest dip] [Closed trades] [AI cost]
+[Equity chart                         ] [Build → Test → Learn]
+[Incomplete evaluation warning, if applicable]
+[Compact same-input comparison]
+[All experiments and evidence ▸]
+```
+
+Heuristics: visibility keeps date/status and incomplete coverage visible; forgiveness uses
+read-only disclosure; minimalism limits headline metrics to four; consistency reuses colors
+and native details; context uses responsive two-column mobile metrics; errors retain clear
+import failures; speed needs no click for key numbers; learnability uses plain labels.
+Reuse existing report dataclasses, SVG chart, escaping and native details (keyboard accessible,
+44px targets). No dependencies, JS, invented progress, learning score or profitability claim.
+
+Implementation/test plan: (1) focus Jev when present, otherwise the last supplied experiment
+without claiming it is chronologically latest; (2) compact metrics/chart/comparison and collapse
+all technical evidence; (3) test focus selection, visible degraded standalone runs, escaped
+content and empty state; (4) run full quality gate, regenerate saved report, deploy private
+preview with no alias, check authentication and byte equality, update handoff/PR. Source scope:
+report.py, template.html and cockpit tests. Browser layout verification requires authenticated
+browser access; do not weaken protection. Rollback restores the prior presentation/preview.
+
 
 ### 2026-09-30 PM continuation: foundation teaching material
 

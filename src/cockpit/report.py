@@ -236,14 +236,101 @@ def chart(run: Run) -> str:
         '<svg viewBox="0 0 960 210" role="img" aria-label="Recorded account equity">'
         '<path d="M20 180H940" stroke="#34474a"/>'
         f'<polyline points="{coordinates}" fill="none" stroke="#8de1c1" stroke-width="3"/>'
-        f'<text x="20" y="205" fill="#a8b4b1">{escape(date(first))}</text>'
-        f'<text x="940" y="205" text-anchor="end" fill="#a8b4b1">{escape(date(last))}</text>'
+        f'<text x="20" y="205" fill="#a8b4b1">{escape(date(first)[:10])}</text>'
+        f'<text x="940" y="205" text-anchor="end" fill="#a8b4b1">{escape(date(last)[:10])}</text>'
         f'</svg><p class="muted">Displayed equity range: {low:,.2f}–{high:,.2f} USDT. '
-        'Chart samples may omit intraperiod extremes; drawdown comes from the run summary.</p>'
+        'Sampled curve · dip measured from full run.</p>'
+    )
+
+
+def display_name(run: Run) -> str:
+    return {
+        "jev-breakout-filter-v1": "Jev agent",
+        "breakout-baseline-v1": "Simple strategy",
+        "AlphaStrategy": "Earlier strategy",
+    }.get(run.name, run.name)
+
+
+def metric_cards(metrics: list[tuple[str, str]]) -> str:
+    return '<dl class="metrics">' + "".join(
+        f'<div><dt>{escape(label)}</dt><dd>{escape(value)}</dd></div>'
+        for label, value in metrics
+    ) + '</dl>'
+
+
+def coverage_warning(run: Run) -> str:
+    if not run.policy_errors:
+        return ""
+    return (
+        '<aside class="warning" aria-label="Evaluation warning">'
+        '<strong>Incomplete test</strong>'
+        f'<span>{run.policy_errors} candidate evaluations failed or were blocked. '
+        'Results do not show full agent performance.</span></aside>'
     )
 
 
 def render(runs: list[Run]) -> str:
+    # Prefer the requested agent, never the best-performing result. Input order breaks ties;
+    # do not imply a chronological "latest" ordering that imported archives cannot establish.
+    selected = next((run for run in reversed(runs) if run.name == "jev-breakout-filter-v1"),
+                    runs[-1] if runs else None)
+    overview = ('<article><h2>No saved runs yet</h2>'
+                '<p>Import a completed backtest to begin.</p></article>')
+    if selected is not None:
+        run = selected
+        cost = f"${run.inference_cost_usd:.4f}" if run.inference_cost_usd is not None else "Unknown"
+        positions = str(run.open_positions) if run.open_positions is not None else "unknown"
+        overview = (
+            '<section class="overview" aria-label="Selected experiment">'
+            '<div class="section-heading"><div><span class="eyebrow">Selected backtest</span>'
+            f'<h2>{escape(display_name(run))}</h2></div>'
+            f'<span class="period">{escape(run.period)}</span></div>'
+            + metric_cards([
+                ("Trading return", f"{run.net_return:+.2%}"),
+                ("Biggest dip", f"{run.drawdown:.2%}"),
+                ("Closed trades", str(run.closed_trades)),
+                ("AI cost · this run", cost),
+            ])
+            + '<div class="metric-note">Trading fees included · AI cost separate (USD)</div>'
+            + coverage_warning(run)
+            + '<div class="dashboard-grid"><article class="performance">'
+            '<div class="section-heading"><h3>Account value</h3>'
+            f'<span class="balance">{run.ending_equity:,.2f} <small>USDT</small></span></div>'
+            f'<p class="muted">Started at {run.starting_equity:,.2f} USDT · '
+            f'Open positions: {positions}</p>'
+            + chart(run)
+            + '</article><article class="growth"><h3>Agent progress</h3>'
+            '<ol class="milestones"><li><span class="step done">✓</span>'
+            '<div><strong>Connected</strong><span>Jev can evaluate setups</span></div></li>'
+            '<li><span class="step current">2</span><div><strong>Testing</strong>'
+            '<span>Early backtests · no proven edge</span></div></li>'
+            '<li><span class="step">3</span><div><strong>Learning</strong>'
+            '<span>Teacher &amp; memory not active</span></div></li></ol>'
+            '<p class="next-step"><span>Next milestone</span>Teach, then test on unseen data.</p>'
+            '</article></div></section>'
+        )
+        matching = [other for other in runs if run.comparison_key is not None
+                    and other.comparison_key == run.comparison_key]
+        if len(matching) > 1:
+            rows = []
+            for other in matching:
+                label = escape(display_name(other))
+                if other.policy_errors:
+                    label += ' <span class="tag">Incomplete</span>'
+                rows.append(
+                    f'<tr><th scope="row">{label}</th><td>{other.net_return:+.3%}</td>'
+                    f'<td>{other.drawdown:.3%}</td><td>{other.closed_trades}</td></tr>'
+                )
+            overview += (
+                '<article class="compare"><div class="section-heading">'
+                '<h3>How does it compare?</h3>'
+                '<span class="muted">Same data &amp; costs</span></div>'
+                '<div class="comparison"><table><thead><tr><th scope="col">Strategy</th>'
+                '<th scope="col">Return</th><th scope="col">Biggest dip</th>'
+                '<th scope="col">Trades</th></tr></thead><tbody>' + ''.join(rows)
+                + '</tbody></table></div>'
+                '<p class="muted">One experiment. Improvement is not yet proven.</p></article>'
+            )
     sections = []
     for index, run in enumerate(runs, start=1):
         metrics = [
@@ -265,19 +352,20 @@ def render(runs: list[Run]) -> str:
             ("Recorded AI cost (USD)", f"${run.inference_cost_usd:.9f}"
              if run.inference_cost_usd is not None else "Not reported"),
         ]
-        cards = "".join(f'<div><dt>{escape(k)}</dt><dd>{escape(v)}</dd></div>' for k, v in metrics)
         records = "".join(f"<li>{escape(row)}</li>" for row in run.details)
         sections.append(
-            f'<article id="run-{index}"><div class="eyebrow">'
-            f'{escape(run.kind)} / RUN {index:02}</div>'
-            f'<h2>{escape(run.name)}</h2><p class="muted">{escape(run.period)}</p>'
-            f'<dl class="metrics">{cards}</dl>{chart(run)}'
-            f'<p>Started with {run.starting_equity:,.2f} USDT. '
-            'This run alone does not establish profitability or improvement.</p>'
-            f'<details><summary>Decisions and trade records ({len(run.details)})</summary>'
+            f'<details class="run-detail" id="run-{index}"><summary>'
+            f'{escape(display_name(run))} <span class="muted">· {escape(run.kind)} '
+            f'· {run.net_return:+.2%}'
+            + (' · Incomplete test' if run.policy_errors else '')
+            + '</span></summary><div class="detail-body">'
+            f'<h3>{escape(run.name)}</h3><p class="muted">{escape(run.period)}</p>'
+            + coverage_warning(run) + metric_cards(metrics) + chart(run)
+            + f'<details><summary>Decisions and trade records ({len(run.details)})</summary>'
             f'<ol>{records or "<li>No records available.</li>"}</ol></details>'
-            f'<details><summary>Evidence and assumptions</summary><p>{escape(run.note)}</p>'
-            f'<p>Source: {escape(run.source)}</p></details></article>'
+            '<details><summary>Evidence and assumptions</summary>'
+            f'<p>{escape(run.note)}</p><p>Source: {escape(run.source)}</p>'
+            '</details></div></details>'
         )
     groups: dict[str, list[Run]] = {}
     for run in runs:
@@ -297,24 +385,26 @@ def render(runs: list[Run]) -> str:
             rows.append("<tr>" + "".join(f"<td>{escape(v)}</td>" for v in values) + "</tr>")
         headers = ["Policy", "Trading return", "Drawdown", "Closed trades", "Open positions",
                    "Model choices", "Policy errors", "Recorded AI cost (USD)"]
-        degraded = any(run.policy_errors for run in group)
         comparisons.append(
-            '<article><h2>Same-input comparison</h2>'
+            '<details><summary>Same-input comparison · full metrics</summary>'
             f'<p class="muted">{escape(group[0].period)}</p>'
             '<p>Matching input-file hash, period and execution settings. '
             'Cash reference: 0% trading return. AI cost is separate from USDT trading P&amp;L; '
             'unresolved reservations are not included in recorded successful-call costs.</p>'
-            + ('<p><strong>Degraded evaluation: policy errors or model limits occurred. '
-               'Do not interpret this as complete model coverage.</strong></p>' if degraded else '')
+            + ('<p>Degraded evaluation: policy errors or model limits occurred.</p>'
+               if any(run.policy_errors for run in group) else '')
             + '<div class="comparison"><table><thead><tr>'
             + "".join(f"<th scope=\"col\">{escape(h)}</th>" for h in headers)
-            + '</tr></thead><tbody>' + "".join(rows) + '</tbody></table></div>'
-            '<p>A short comparison does not establish profitability or learning.</p></article>'
+            + '</tr></thead><tbody>' + "".join(rows) + '</tbody></table></div></details>'
         )
-    body = "".join(comparisons + sections) or (
-        "<article><h2>No saved runs yet</h2><p>Import a completed replay journal "
-        "or saved backtest to see actual results here.</p></article>"
-    )
+    evidence = (
+        '<details class="evidence" id="evidence"><summary>'
+        f'All experiments &amp; evidence <span class="muted">({len(runs)} saved runs)</span>'
+        '</summary><div class="detail-body">' + ''.join(sections + comparisons)
+        + '<p class="muted">Learning not evaluated. '
+        'Saved results do not monitor a running agent.</p>'
+        '</div></details>'
+    ) if runs else ''
     generated = datetime.now(UTC).strftime("%d %b %Y · %H:%M UTC")
     template = Path(__file__).with_name("template.html").read_text(encoding="utf-8")
-    return template.replace("{{generated}}", generated).replace("{{runs}}", body)
+    return template.replace("{{generated}}", generated).replace("{{runs}}", overview + evidence)
