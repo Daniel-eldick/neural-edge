@@ -147,7 +147,10 @@ Journal every opportunity considered, including abstentions and vetoes, not only
 Record setup, invalidation, expected horizon, risk, rationale, context, model inputs/output, cost, fills and outcome. Do not reward trade count or teacher approval. Separate rule compliance from empirical net performance.
 Teacher lessons need supporting examples, counterexamples and uncertainty; one lucky win does not graduate a rule.
 
-Curriculum procurement is a future task assigned to the assistant:
+The first [foundation curriculum](../curriculum/FOUNDATIONS.md) was assembled on 2026-09-30
+with five verified primary sources, six original lesson/exercise cards and a temporal-use
+boundary. It is documentation only: no model ingestion, automated teacher or learning pass.
+Further curriculum work remains assigned to the assistant:
 - Start with market mechanics, order types, costs, position sizing and probability.
 - Then operational definitions of a small number of setups (e.g. trend pullback or breakout).
 - Finally regime awareness, abstention and evidence review.
@@ -281,6 +284,30 @@ The initial documentation handoff used link/path and scope checks. Implementatio
 Source links support platform context. They do not establish that the apprentice will earn money. Curriculum selection and engine integration remain future work.
 
 ## Progress log
+
+### 2026-09-30 PM continuation: foundation teaching material
+
+**Status: COMPLETE for the initial source pack; teacher/memory implementation remains pending.**
+Documentation-only increment under existing authorization; no strategy change, paid call,
+dataset use, deployment or new service. Plan: verify sources → create original lessons and
+tests-of-understanding → document availability/anti-leakage limits → synchronize status.
+
+Created `docs/curriculum/FOUNDATIONS.md` with exchange constraints, costs, account risk,
+causal information, operational setup definitions and evidence/overfitting. Five primary
+sources were opened and checked; publication dates are recorded where established and
+unknowns remain explicit. Sources are linked rather than bulk-copied; access is not treated
+as a redistribution license. Original arithmetic exercises have independently checked answers.
+
+The source pack is not silently backdated into 2024 research. It separates source-supported
+mechanics from project hypotheses and retains the approved 0.5%/2.5% risk limits even when
+source examples differ. Its proposed teacher handoff includes available-at time, counterexamples,
+version provenance and separate quiz answer keys. These are requirements for implementation,
+not claims that retrieval controls or autonomous learning already exist.
+
+PM order: (1) causal teacher/memory foundation with recorded-response tests; (2) predeclared
+full-coverage frozen-versus-learning comparisons; (3) forward paper operation and cockpit
+controls/hosting. Daniel need not supply material or increase budget now. Hosting account
+access and concrete promotion decisions can be requested when those deliverables are ready.
 
 ### 2026-09-30 continuation: first fixed historical comparison
 
