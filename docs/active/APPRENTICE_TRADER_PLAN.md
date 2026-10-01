@@ -380,6 +380,118 @@ Source links support platform context. They do not establish that the apprentice
 ## Progress log
 
 
+### 2026-10-01: automatically updating cockpit — Full tier / local verification complete; online connection pending (5/6, 83% of this increment)
+
+#### 1. What / why and authorization
+Daniel requested continuation and a live-updating cockpit. Existing historical page is immutable;
+refreshing it cannot reveal new runs or worker health. Implement a read-only publishing feed and
+same-origin polling shell. This authorizes dashboard synchronization, not new model experiments,
+orders or 24/7 trading. Default source is existing Mac while awake; hosting preference asked.
+No new paid service is provisioned until the concrete cost/hosting choice is resolved. Existing
+USD3 inference ledger untouched. Full tier for cloud credentials, freshness and offline behavior.
+
+#### 2. UX brief and design
+User: Daniel checking progress quickly on phone/tablet/laptop; minimal reading. Open cockpit →
+see connection/agent activity and update age → scan existing charts → expand evidence if needed.
+Reuse palette, charts, disclosures and mobile layout. No new trading controls.
+
+```
+NEURALEDGE                    Updated 12s ago   [Refresh]
+● Updates connected           Agent idle / Running replay / Paused
+Last result: actual timestamp · Research only
+[Existing visual results and evidence; refresh only when result changes]
+```
+
+Loading: Connecting, retain existing result. No data: Waiting for first publication. Transport
+failure: Updates unavailable; last update timestamp stays unchanged; retry button. Stale heartbeat
+(>180s): Publisher offline or delayed, never green. Historical candle time stays distinct from
+wall-clock publication. No polling hidden tabs; resume immediately on visibility/online. Refresh
+must preserve chart choice and open evidence. Fatal source error retains last good report and
+explicitly marks data unavailable. No fabricated current prices/profit or implied training.
+
+Heuristics: visibility explicit states/age; forgiveness read-only/retry; minimalism one status
+strip; consistency existing palette; context responsive; recovery retry/stale; speed automatic;
+learnability no setup words in primary view. Concern: Mac sleep stops source, always shown stale.
+
+#### 3. Tasks / test-first sequence (6 tasks)
+1. [x] Write failing read-only snapshot/publisher tests: committed checkpoint validation, no file
+   creation, running/paused/completed distinctions, malformed source, no token/prompt exposure.
+2. [x] Implement bounded Python source observer and report refresh using completed journals only;
+   preserve earlier references and partial-study warnings. In-progress checkpoints provide
+   progress status only, never fabricated completed performance. No engine/policy changes.
+3. [x] Write failing frontend/backend transport tests: age transitions, corrupt/missing feed, auth
+   failure, no-store, size/format limits, fixed private storage keys and no public token.
+4. [x] Implement plain-JS polling shell and private Vercel read endpoint plus publisher transport;
+   local HTTP verification first. No framework or SDK dependency. Private free-plan Upstash
+   REST transport; no browser storage token. Source publishes heartbeat
+   every60s and reports only on change; browser polls30s only while visible. Single publisher.
+5. [x] Review/QA: full Python gate, JS tests, real-browser local network/stale/new-result scenarios,
+   keyboard/mobile/tablet; verify old artifacts and no inference accounting changes.
+6. [ ] Publish protected preview once concrete storage/cost setup authorized; verify anonymous denial,
+   actual update without redeploy/reload, stale and recovery. Document exact operating location,
+   process lifetime, cost and remaining limits; update draft PR. No main merge/promotion.
+
+Transport selection: free Upstash Redis through Vercel, `autoUpgrade=false`, `prodPack=false`,
+`eviction=false`, preview only. It avoids metered Blob storage and allows atomic MSET for report
+and metadata. No Blob store was created. Native install returned
+`integration_terms_acceptance_required`; Daniel must accept in his browser. No legal acceptance
+or paid plan change is performed by the agent. Do not bypass the account step with temporary
+unclaimed storage. Cloud connection/publication pending that step; local verification continues.
+REST transport needs no SDK dependency; the uncommitted Blob trial dependency was removed.
+
+#### 4. Files / blast radius
+New `src/cockpit/live.py`, tests, `web/cockpit/` (plain JS, Node transport, hosting config),
+package data if needed, current plan/README/hosting/QA. Existing report renderer reused; original
+completed journals, responses, evaluator, configs and credentials never modified. Explicit local
+source config ignored under user_data. Git remains feature branch. Scope guard6 tasks, no>9.
+
+#### 5. Test plan
+Python tests first for bounded consistent SQLite read, invalid checksum/sequence, incomplete
+state, active writer and preserved files. Report builder tests completed-only inclusion and
+error labeling. JS node:test checks protocol validation, stale/future timestamps, HTTP handling
+and transport adapters with fake providers (never performance evidence). Browser tests replace
+local feed to verify chart refresh, state preservation, offline/stale/auth recovery at1440/820/390.
+Hosted test uses real saved research plus heartbeat, no synthetic returns published. Model calls0.
+
+#### 6. Scale / failure
+Max200 journals, bounded checkpoint/report size, source fingerprint caching to avoid rereading
+all history each poll. Read transactions only, short timeout, no whole-database copies or network
+calls per journal. One metadata read per visible browser interval. Last good report retained on
+failure; heartbeat timestamp never rewritten by reader. Single-writer local lock prevents duplicate
+publishers. Cloud MSET commits changed report and metadata atomically; reader refuses a revision
+mismatch and keeps prior. Python owns continuous publishing, with bounded 60/120/240/300-second
+retry backoff; acknowledged revision advances only after success. SIGTERM releases the OS lock.
+Private observer state preserves observed journal inventory and last report across restarts, checks
+the source-config hash and report hash, and never freshens an old report timestamp on source failure.
+Cloud down: report unavailable explicit; Mac asleep: stale. No claim that publisher is agent worker.
+
+#### 7. Security / rollback / costs
+Existing Vercel deployment protection required on every route; private storage only; server-only
+scoped token and dedicated store if provisioned. Fixed-key read API, GET only, no arbitrary URL/file
+fetch. Strict CSP, no-store and noindex. Isolated deployment directory includes only app assets,
+never research databases/token files. Source local credentials kept ignored with0600 permissions.
+No Supabase/RLS/tenant database; advisor checks not applicable. Revert to prior protected static
+preview to roll back; stop publisher; immutable research evidence remains unchanged. Requested
+Upstash free plan disables automatic upgrades; existing Vercel Pro function/transfer allowances
+still apply. No separate zero-invoice promise, paid upgrade or new inference spend.
+
+#### 8. Enforcement gaps
+Updates report observed committed progress, not a verified external-exchange heartbeat. Mac sleep
+and failed network prevent freshness. Source files remain trusted local inputs. No uptime SLA,
+24/7 agent, run start/stop, uncertain-provider billing repair or demonstrated learning in this scope.
+Legacy `.Codex/landmines.md` is absent; `.claude/landmines.md` was found and read, with no
+active entries. Existing schema/engine contracts inspected directly. Online provisioning, hosted
+API protection, actual cloud heartbeat and source-host lifetime remain unverified/pending.
+
+
+Local verification: 247 Python tests passed, 17 unchanged expected failures; Ruff clean, mypy
+68 files clean, six JS tests passed. Browser 1440/820/390: automatic result replacement, preserved
+chart/evidence selection, stale/offline recovery, no overflow/errors. All35 study hashes unchanged.
+Fresh review fixes include bounded upload retry, signal-safe lock, malformed/disappearing source
+handling, persisted last-good report and unchanged restart timestamp. See
+[full review/QA evidence](../reviews/2026-10-01_LIVE_COCKPIT_QA.md).
+
+
 ### 2026-09-30: stop new model calls after a failed/uncertain attempt — complete / verified (3/3)
 
 A real connection failure in opportunity-screen-v1 vetoed that candidate, but the frozen

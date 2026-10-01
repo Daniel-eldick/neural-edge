@@ -63,3 +63,7 @@ src/autoresearch/results.tsv
 # Claude Code
 # Track: .claude/rules/, .claude/skills/, .claude/hooks/, .claude/references/
 # Track: .claude/landmines.md, .claude/coffee-notes.md
+
+# Live cockpit frontend dependency artifacts
+web/cockpit/node_modules/
+web/cockpit/.vercel/

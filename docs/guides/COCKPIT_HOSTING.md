@@ -99,3 +99,109 @@ from the Vercel project; retain all local journals and the AI budget ledger.
 
 References: [Vercel Authentication](https://vercel.com/docs/deployment-protection/methods-to-protect-deployments/vercel-authentication),
 [toolbar suppression for tests](https://vercel.com/docs/vercel-toolbar/managing-toolbar#disable-toolbar-for-automation).
+
+## Live updates: local implementation, online connection pending
+
+2026-10-01: `web/cockpit/` implements the replacement shell and private read endpoint.
+It has not replaced the static preview linked above. The local source currently holds 38
+actual replay/reference records; completed results retain their historical dates and warnings.
+The page polls metadata every 30 seconds while visible. A local observer publishes source
+status every 60 seconds and refreshes results only when completed evidence changes. It is
+read-only: it cannot start a replay, change a strategy, call Jev or place an order.
+
+A successful HTTP response never makes old source data fresh. After 180 seconds without a
+source heartbeat, the page says “Publisher offline or delayed” and reports unknown agent
+status. Network/authentication failures retain the last loaded charts. A source verification
+failure is explicit and retains the last good report. Chart choice and open evidence survive
+result updates. “Updates connected” means the dashboard source is reachable, not that trading
+or learning is taking place. Publication timestamps include the viewer's timezone; market
+periods remain historical UTC.
+
+### Local operation
+
+Use Python from the project environment and Node 22 or newer. No new npm dependencies.
+Create an ignored `user_data/cockpit/live-sources.json` with explicit local inputs, for example:
+
+```json
+{
+  "roots": ["user_data/research"],
+  "archives": ["user_data/backtest_results/backtest-result-2026-04-06_04-41-23.zip"],
+  "references": []
+}
+```
+
+The already configured local file also includes seven reference groups; do not replace it with
+this minimal example or silently remove those comparisons. Each reference entry specifies
+`baseline`, `candles`, and replay `settings`; data hash and settings must match the recorded
+baseline. Use a separate output directory when intentionally changing source configuration.
+
+```bash
+.venv/bin/python -m src.cockpit.live --config user_data/cockpit/live-sources.json --output user_data/cockpit/live --watch
+```
+
+In a separate terminal, for local viewing only:
+
+```bash
+node web/cockpit/local.mjs user_data/cockpit/live
+```
+
+Open `http://127.0.0.1:8765`. The test server binds only to loopback and serves an explicit
+asset allowlist. It is not a public hosting or authentication service. The current processes
+are terminal-session processes on Daniel's Mac, not login services; no autostart or 24/7 host
+has been installed. Sleep, shutdown or closing the process stops source updates.
+
+The observer holds an OS advisory lock and refuses duplicate observers for the same output.
+Stopping with Ctrl+C or SIGTERM releases that lock; an existing lock file is not a stale lock.
+It persists a private source inventory and hash-verified report metadata for restart recovery.
+Corrupt generated state or a changed source configuration fails explicitly; source journal
+corruption is instead displayed as unavailable while retaining verified earlier results.
+Original journals and the inference budget ledger remain authoritative and untouched.
+
+### Pending online activation
+
+Requested storage: dedicated **Upstash Redis free** plan, preview environment only,
+`autoUpgrade=false`, `prodPack=false`, `eviction=false`, region `iad1`. The native Vercel
+integration command returned `integration_terms_acceptance_required`; no resource was created.
+The owner must accept the [Vercel Upstash terms](https://vercel.com/daniel-eldicks-projects/~/integrations/accept-terms/upstash?source=cli)
+and then tell the assistant to continue. Do not bypass this with temporary/unclaimed storage
+or silently accept legal terms. Do not upgrade the plan.
+
+After acceptance, the assistant still must:
+
+1. Provision and verify the dedicated free resource/disabled upgrades, connected only to this
+   project's preview environment. Preserve all existing account/project integrations.
+2. Securely configure `KV_REST_API_URL`, `KV_REST_API_TOKEN` for the local publisher and
+   `KV_REST_API_READ_ONLY_TOKEN` for the server reader. Keep local publisher credentials in
+   a separately ignored file with mode 0600, never chat, tracked source, command-line arguments
+   or the browser. Do not overwrite the existing Jev environment file. No browser storage SDK.
+3. Add `--publish` to the Python observer command in an environment containing those storage
+   credentials. `publish.mjs` is an internal one-shot helper; Python owns the lock, retries and
+   process lifetime. Upload failures retry at 60/120/240/300-second intervals and do not advance
+   the confirmed revision or cloud timestamp. Unchanged reports are not uploaded repeatedly.
+4. Stage only deploy-allowed files from `web/cockpit/` in an isolated directory. The allowlist
+   excludes the publisher, test server, tests, local inputs, journals and credential files.
+   Keep project protection enabled, deploy a preview, check actual target and empty aliases.
+5. Verify both HTML and API reject anonymous access. Authenticate and verify a real source
+   heartbeat advances without redeployment; stop source → stale → resume → connected. Confirm
+   all 38 result/reference records and incomplete-study warning remain present. Recheck layouts.
+6. Record the verified deployment and update the online links. Until then, use the existing
+   static preview or the local live demo; do not claim online live updates are running.
+
+The API exposes only fixed sanitized status/report keys and GET requests. The cloud stores
+only sanitized report HTML and status; a changed report and its metadata publish atomically.
+The reader requires the read-only token. Browser code receives neither storage credentials
+nor raw prompts, databases or budget internals. Strict CSP, no-store/noindex and a script-free
+sandboxed report frame remain in place. Two separate output directories would not share a
+lock: one configured publisher is supported per private store.
+
+Free Redis currently includes 500,000 commands/month and 256 MB. One continuously visible
+tab plus a 60-second publisher is approximately 132,000 status commands per 31-day month,
+plus changed-report reads/writes; more tabs add usage. The selected free plan must not auto-upgrade.
+Vercel serverless/transfer usage still consumes the existing Pro allowance, so this is not a
+promise of a zero account invoice. No inference spend or paid-plan change was made here.
+See [Upstash pricing](https://upstash.com/pricing/redis),
+[REST API](https://upstash.com/docs/redis/features/restapi), and
+[the Vercel integration](https://vercel.com/marketplace/upstash).
+
+Rollback: stop the observer's publication and return to the existing protected static preview.
+Never remove local research evidence or reset pending AI charges as part of dashboard rollback.

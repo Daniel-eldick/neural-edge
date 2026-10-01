@@ -52,12 +52,15 @@ return bars, a candle-close drawdown chart, decision breakdown and timestamped t
 Full records and assumptions expand on demand. Market times are historical UTC; the snapshot
 generation time is separate. Daily bars read recorded daily returns, not a sampled equity curve.
 Incomplete evaluation warnings remain visible. Memory runs report reviewed trades, retrieval
-counts and the last review timestamp. The original pilot did not use memory. This remains a
-dated snapshot; live connection status, automatic updates and start/pause controls are pending.
+counts and the last review timestamp. The original pilot did not use memory. The online link
+below still serves a dated snapshot. A live-updating shell is implemented and verified locally;
+cloud connection awaits acceptance of the free storage integration. Start/pause controls remain pending.
 
 [Open the private online cockpit](https://neural-edge-cockpit-fnrbbq9de-daniel-eldicks-projects.vercel.app) and sign in with the Vercel account
 that owns this project. It uses your existing Vercel plan. Results update only when regenerated
-and redeployed. See [hosting and refresh instructions](docs/guides/COCKPIT_HOSTING.md).
+and redeployed on that existing preview. The new shell polls every 30 seconds, distinguishes
+source freshness from historical result dates, retains charts during outages and preserves view
+choices on refresh. See [live setup and hosting instructions](docs/guides/COCKPIT_HOSTING.md#live-updates-local-implementation-online-connection-pending).
 
 Completed replays also report the number of complete UTC days and descriptive daily Sharpe
 using sample standard deviation, zero risk-free return and sqrt(365) annualization.

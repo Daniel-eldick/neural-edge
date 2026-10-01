@@ -13,6 +13,7 @@
 - [Daily/weekly context verification](reviews/2026-09-30_MARKET_CONTEXT_QA.md): opt-in causal context, recovery tests and remaining evaluation limits.
 - [Context comparison screen](research/CONTEXT_SCREEN_V1.md): three new periods, full coverage, all-context abstention and cash benchmark.
 - [Opportunity screen and failure gate](research/OPPORTUNITY_SCREEN_V1.md): incomplete study preserved, conservative accounting and durable request blocking.
+- [Live cockpit review and QA](reviews/2026-10-01_LIVE_COCKPIT_QA.md): automatic refresh and recovery verified locally; online activation pending private storage acceptance.
 - [Historical archive](archive/README.md)
 - [Existing framework guides](guides/): historical workflow guidance; root agent instructions and current plan take precedence for project-specific claims.
 - [Technical debt](TECHNICAL_DEBT.md): pointer to the current findings and preserved cache note.
