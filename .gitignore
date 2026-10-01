@@ -43,6 +43,9 @@ coverage/
 # Freqtrade
 user_data/data/
 user_data/backtest_results/
+user_data/cockpit/
+user_data/ai/
+user_data/research/
 user_data/logs/
 user_data/notebooks/.ipynb_checkpoints/
 
@@ -60,3 +63,7 @@ src/autoresearch/results.tsv
 # Claude Code
 # Track: .claude/rules/, .claude/skills/, .claude/hooks/, .claude/references/
 # Track: .claude/landmines.md, .claude/coffee-notes.md
+
+# Live cockpit frontend dependency artifacts
+web/cockpit/node_modules/
+web/cockpit/.vercel/

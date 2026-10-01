@@ -1,49 +1,33 @@
-# Incomplete Features Tracker
+# INCOMPLETE FEATURES
 
-**Purpose**: Simple list of incomplete work for easy jump-back
-**Last Updated**: <!-- FILL: Date of last update -->
+Current status (2026-10-01): offline replay/risk foundation, restart recovery, daily reporting and visual comparison cockpit implemented and browser-verified on desktop, tablet and phone. Jev filters candidates with durable responses and a USD 3/month cap. The first real historical pilot completed, but its 100-attempt cap left 11 candidates unevaluated; it establishes no edge. An opt-in deterministic evidence teacher and causal same-run memory are implemented and tested. The [first three-window memory screen](research/MEMORY_SCREEN_V1.md) completed with full coverage and zero policy errors; the tiny sample does not establish a learning advantage. Broader trader decisions, a generative teacher, robust learning evaluation, cloud activation of automatic updates and operating controls remain unfinished. The live-updating cockpit is implemented and locally verified; the free private storage integration still requires owner acceptance before online activation. A private static Vercel preview is now deployed; see [hosting/access](guides/COCKPIT_HOSTING.md). See the reference plan and linked pilot report for evidence.
 
----
+Use [the single reference plan](active/APPRENTICE_TRADER_PLAN.md) for findings, blockers, milestones, acceptance tests and deferred scope. This page is retained as a compatibility entry point, not a second task list.
 
-## 🔴 BLOCKING (Must fix before deployment)
+Initial [foundation curriculum](curriculum/FOUNDATIONS.md) assembled: five verified primary
+sources and six lesson/exercise cards. Six separate runtime cards are now available to the
+opt-in memory policy only from 2026-09-30 UTC. Historical pilot runs remain memory-free.
+Measured learning and competency evaluation remain unfinished.
 
-**None** ✅
+Recurring market-pattern recognition is now an explicit requirement. Frozen Jev input is
+21 base-interval bars; memory mode adds bounded trade memory. Opt-in `jev-context` now adds
+causal daily/weekly OHLCV history, with explicit unknown states and tested recovery. The first
+[context screen](research/CONTEXT_SCREEN_V1.md) is complete with verified daily data: it
+avoided memory-only losses by always waiting, matching cash across three falling periods.
+A follow-up [opportunity screen](research/OPPORTUNITY_SCREEN_V1.md) stopped after a connection
+failure in February 2024; three later periods were not run. The degraded comparison is preserved.
+A durable failure gate now blocks new model requests after failed/uncertain attempts, including
+after restart. One USD .003 reservation remains unresolved; no further paid trial ran.
+Broader market coverage, valid missed-opportunity evaluation, chart-pattern retrieval and
+multi-cycle evaluation remain unfinished. See the single plan's section 7.
+Formal [teacher/memory QA](reviews/2026-09-30_TEACHER_MEMORY_QA.md) passed with warnings.
 
----
+The [comparison screen review and Full QA](reviews/2026-09-30_MEMORY_SCREEN_QA.md) passed with warnings: 190 tests passed, 17 existing expected failures.
 
-## 🟡 IN PROGRESS / BLOCKED
+[Daily/weekly context QA](reviews/2026-09-30_MARKET_CONTEXT_QA.md): 215 passed, 17 existing expected failures; no new paid inference or real context study.
 
-_No items yet. Add features as work begins._
+[Context-study review and Full QA](reviews/2026-09-30_CONTEXT_SCREEN_QA.md): 228 passed, 17 existing expected failures. No learned-edge or operating-readiness claim.
 
-<!-- Example entry:
-**Feature Name** - 🔧 IN PROGRESS (Date)
+[Failure-gate review and QA](reviews/2026-09-30_OPPORTUNITY_SCREEN_QA.md): 234 passed, 17 existing expected failures. Failed-study comparison remains incomplete.
 
-- **Status**: 🔧 IN PROGRESS (X%) — brief description of current state
-- **Blocking**: [what's blocking, if anything]
-- **Reference**: [docs/active/PLAN_NAME.md](active/PLAN_NAME.md)
--->
-
----
-
-## 🟢 PLANNED (Future work)
-
-_No items yet. Add planned features from the roadmap._
-
-<!-- Example entry:
-### HIGH Priority
-
-- **Feature Name** — Brief description. Est: X hrs.
-  - Reference: [docs/active/PLAN_NAME.md](active/PLAN_NAME.md) or BACKLOG.md
--->
-
----
-
-## Format Guide
-
-| Section | When to Add | When to Remove |
-|---------|------------|----------------|
-| 🔴 BLOCKING | Production-breaking issue found | Issue resolved and verified |
-| 🟡 IN PROGRESS | Work started on a feature | Feature completed → move to archive note |
-| 🟢 PLANNED | Feature approved for development | Work starts → move to 🟡 |
-
-**Update frequency**: At feature milestones (start, blocked, complete) — not every commit.
+[Live cockpit review and QA](reviews/2026-10-01_LIVE_COCKPIT_QA.md): local freshness, automatic result refresh, outage recovery and restart behavior verified. Hosted integration remains pending; no new agent/model run.

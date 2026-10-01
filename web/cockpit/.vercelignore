@@ -1,0 +1,11 @@
+*
+!index.html
+!live.css
+!live.mjs
+!lib
+!lib/**
+!api
+!api/**
+!package.json
+!package-lock.json
+!vercel.json
