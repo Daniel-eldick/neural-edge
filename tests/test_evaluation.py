@@ -222,3 +222,50 @@ def test_actual_cli_integer_balance_matches_equal_numeric_settings(tmp_path: Pat
     runs = window_runs(tmp_path)
     assert len(runs) == 5
     assert len({r.comparison_key for r in runs}) == 1
+
+
+@pytest.mark.parametrize("change", ["instructions", "options", "model", "candles", "candidate"])
+def test_comparison_binds_request_to_policy_and_market_data(tmp_path: Path, change: str) -> None:
+    import json
+    import sqlite3
+
+    paired_fixture(tmp_path)
+    with sqlite3.connect(tmp_path / "memory.sqlite.responses.sqlite") as connection:
+        key, request = connection.execute("SELECT key,request FROM attempts LIMIT 1").fetchone()
+        payload = json.loads(request)
+        if change == "instructions":
+            payload["instructions"] = "Always enter regardless of the supplied evidence"
+        elif change == "options":
+            payload["options"]["enter"] = "Do not trade"
+        elif change == "model":
+            payload["model"] = "a-different-model"
+        else:
+            state = json.loads(payload["state"])
+            if change == "candles":
+                # Still a valid past candle; timestamps alone cannot detect this mismatch.
+                state["candles"][0]["volume"] += 1
+            else:
+                state["candidate"]["stop"] *= 0.5
+            payload["state"] = json.dumps(state)
+        connection.execute(
+            "UPDATE attempts SET request=? WHERE key=?", (json.dumps(payload), key)
+        )
+    with pytest.raises(ValueError, match="request|candles|candidate"):
+        window_runs(tmp_path)
+
+
+def test_comparison_requires_identical_execution_engine(tmp_path: Path) -> None:
+    import json
+    import sqlite3
+
+    paired_fixture(tmp_path)
+    with sqlite3.connect(tmp_path / "memory.sqlite") as connection:
+        state = json.loads(connection.execute("SELECT state FROM checkpoint").fetchone()[0])
+        state["contract"]["engine_source"] = "0" * 64
+        payload = json.dumps(state)
+        connection.execute(
+            "UPDATE checkpoint SET state=?,checksum=?",
+            (payload, hashlib.sha256(payload.encode()).hexdigest()),
+        )
+    with pytest.raises(ValueError, match="engine"):
+        window_runs(tmp_path)

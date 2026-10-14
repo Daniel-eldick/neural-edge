@@ -129,6 +129,8 @@ def main() -> None:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--init-budget", action="store_true")
     mode.add_argument("--status", action="store_true")
+    mode.add_argument("--audit-budget", action="store_true",
+                      help="Read unresolved reservations across all UTC months; no network calls")
     mode.add_argument("--check", action="store_true")
     args = parser.parse_args()
     try:
@@ -137,6 +139,14 @@ def main() -> None:
             print("Created shared USD 3/month AI budget ledger (UTC calendar months).")
             return
         budget = Budget(LEDGER)
+        if args.audit_budget:
+            print(json.dumps({
+                "unresolved_reservations": budget.unresolved(),
+                "note": "All UTC months. Local reservation IDs are not provider request IDs. "
+                        "Amounts are retained bounds, not confirmed charges. Provider usage "
+                        "evidence is required before settlement; no state has been changed.",
+            }, sort_keys=True))
+            return
         if args.check:
             key = os.environ.get("TYPESAFE_API_KEY") or dotenv_values(ROOT / ".env.local").get(
                 "TYPESAFE_API_KEY"

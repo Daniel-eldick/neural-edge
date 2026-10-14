@@ -10,9 +10,11 @@ import sqlite3
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
-from src.agents.jev import PRICE_NANO_USD_PER_TOKEN, parse_response
+from src.agents.contextual import CONTEXT_INSTRUCTIONS
+from src.agents.jev import MODEL, PRICE_NANO_USD_PER_TOKEN, parse_response
+from src.agents.learning import MEMORY_INSTRUCTIONS
 from src.agents.market_context import MarketContext
-from src.agents.policy import OPTIONS
+from src.agents.policy import INSTRUCTIONS, OPTIONS
 from src.cockpit.report import Activity, Run, date, load_journal
 from src.evaluation.daily import reconcile
 from src.replay.engine import Candle, Settings
@@ -152,9 +154,18 @@ def checkpoint(path: Path) -> dict[str, Any]:
 
 
 def receipt_evidence(
-    path: Path, run: Run, identity: str, market: MarketContext | None = None
+    path: Path, run: Run, identity: str, market: MarketContext | None = None,
+    *, bars: list[Candle],
 ) -> dict[str, int]:
     """Cross-check saved receipts without reopening a writable response store."""
+    instructions = {
+        "jev-breakout-filter-v1": INSTRUCTIONS,
+        "jev-memory-filter-v1": MEMORY_INSTRUCTIONS,
+        "jev-context-filter-v1": CONTEXT_INSTRUCTIONS,
+    }.get(run.name)
+    if instructions is None:
+        raise ValueError("Unsupported model request policy")
+    cutoffs = {bar.opened_at + 300: index for index, bar in enumerate(bars)}
     journal = sqlite3.connect((path.parent / run.source).resolve().as_uri() + "?mode=ro", uri=True)
     events: dict[str, dict[str, Any]] = {}
     try:
@@ -181,7 +192,26 @@ def receipt_evidence(
             ):
                 raise ValueError("Comparison has failed, uncertain or corrupt receipts")
             payload = json.loads(request)
+            if (
+                not isinstance(payload, dict)
+                or set(payload) != {"model", "state", "instructions", "options"}
+                or payload["model"] != MODEL
+                or payload["instructions"] != instructions
+                or payload["options"] != OPTIONS
+            ):
+                raise ValueError("Saved model request differs from declared policy")
             state = json.loads(payload["state"])
+            now = state.get("now")
+            index = cutoffs.get(now) if type(now) is int else None
+            if index is None or index < 20 or state.get("candles") != [
+                asdict(bar) for bar in bars[index - 20 : index + 1]
+            ]:
+                raise ValueError("Receipt candles differ from the exact available dataset prefix")
+            latest = bars[index]
+            if state.get("candidate") != {
+                "symbol": latest.symbol, "stop": latest.close * 0.98, "target": latest.close * 1.04,
+            } or key != json.dumps([latest.symbol, now], separators=(",", ":")):
+                raise ValueError("Receipt candidate or request key differs from declared policy")
             answer = parse_response(json.loads(response), OPTIONS)
             event = events.pop(key, None)
             if (
@@ -260,6 +290,7 @@ def window_runs(directory: Path, *, with_context: bool = False) -> list[Run]:
         sort_keys=True,
     )
     runs = []
+    engine_source = None
     for filename, policy in policies:
         path = directory / f"{filename}.sqlite"
         if not path.is_file():
@@ -276,6 +307,17 @@ def window_runs(directory: Path, *, with_context: bool = False) -> list[Run]:
             "settings"
         ] != asdict(settings):
             raise ValueError("Comparison checkpoint data/settings differ from supplied candles")
+        source_hash = state["contract"].get("engine_source")
+        if (
+            not isinstance(source_hash, str)
+            or len(source_hash) != 64
+            or any(character not in "0123456789abcdef" for character in source_hash)
+        ):
+            raise ValueError("Comparison requires an identified execution engine")
+        if engine_source is None:
+            engine_source = source_hash
+        elif engine_source != source_hash:
+            raise ValueError("Comparison execution engine differs between variants")
         if filename == "context":
             assert market is not None
             connection = sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)
@@ -301,6 +343,7 @@ def window_runs(directory: Path, *, with_context: bool = False) -> list[Run]:
                 run,
                 state["policy_state"]["response_store"],
                 market,
+                bars=bars,
             )
         # Numeric-equivalent JSON must also group identically in the read-only cockpit.
         run.comparison_key = key

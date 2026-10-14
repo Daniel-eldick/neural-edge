@@ -19,6 +19,10 @@ The subsequent [opportunity screen](docs/research/OPPORTUNITY_SCREEN_V1.md) stop
 connection failure in its first context run; the comparison is incomplete. A durable failure
 gate now blocks further model requests for that run, including after restart. Profitability remains unproven.
 
+The [next controlled study design](docs/research/CONTROLLED_CONTEXT_SCREEN_V2.md) separates
+context instructions from context content. Execution remains blocked pending matched-policy
+implementation and authoritative reconciliation of the earlier uncertain request.
+
 - [Documentation index](docs/README.md)
 - [Agent instructions](AGENTS.md)
 - [Historical setup plan](docs/archive/NEURAL_EDGE_PROJECT_SETUP.md)
@@ -112,6 +116,8 @@ through the process environment. Never put it in chat, a command argument, or Gi
 .venv/bin/python -m src.agents.jev --init-budget
 # Local accounting only; makes no API call.
 .venv/bin/python -m src.agents.jev --status
+# Read-only audit of unresolved reservations across ALL months; no API call.
+.venv/bin/python -m src.agents.jev --audit-budget
 # One harmless paid connection check, covered by the allowance.
 .venv/bin/python -m src.agents.jev --check
 ```
@@ -122,6 +128,11 @@ responses at $0.042 per million reported input tokens (output tokens free). Fail
 ambiguous requests keep the full reservation; there are no automatic retries. Missing,
 corrupt or exhausted accounting blocks new calls. Do not delete or replace the ledger:
 it is the spending record shared by all local runs, and future model providers must use it.
+
+`--status` reports the current UTC month only. `--audit-budget` also reveals older unresolved
+reservations; its local IDs are not provider request IDs, and retained amounts are not confirmed
+bills. Run it on the original host with the authoritative ledger. It never settles usage or
+clears failed replay attempts; provider evidence is required for reconciliation.
 
 Pricing was verified 2026-09-30. New calls stop on 2026-11-01 until pricing is reviewed.
 The application guard covers calls made through this connector, not API spending in other

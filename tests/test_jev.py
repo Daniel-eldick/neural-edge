@@ -10,6 +10,7 @@ import pytest
 import requests
 import responses
 
+from src.agents import jev as jev_module
 from src.agents.budget import CAP_NANO_USD, Budget, BudgetError
 from src.agents.jev import ENDPOINT, RESERVE_NANO_USD, JevClient, JevError
 
@@ -107,3 +108,40 @@ def test_redirect_does_not_forward_token(tmp_path: Path) -> None:
     with pytest.raises(JevError, match="307"):
         jev.choose("Paper mode", "Which mode?", OPTIONS)
     assert len(responses.calls) == 1
+
+
+@responses.activate
+def test_budget_audit_cli_needs_no_credentials_or_network(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    path = tmp_path / "budget.sqlite"
+    Budget.initialize(path)
+    reservation = Budget(path).reserve("typesafe", RESERVE_NANO_USD, now=NOW)
+    before = path.read_bytes()
+    monkeypatch.setattr(jev_module, "LEDGER", path)
+    monkeypatch.setattr("sys.argv", ["jev", "--audit-budget"])
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+
+    def forbid_credentials(*args: Any, **kwargs: Any) -> None:
+        pytest.fail("Audit must not load credentials")
+
+    monkeypatch.setattr(jev_module, "dotenv_values", forbid_credentials)
+    jev_module.main()
+    report = json.loads(capsys.readouterr().out)
+    assert report["unresolved_reservations"][0]["reservation_id"] == reservation
+    assert "not confirmed charges" in report["note"]
+    assert len(responses.calls) == 0
+    assert path.read_bytes() == before
+
+
+def test_budget_audit_cli_missing_ledger_is_not_reinitialized(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    path = tmp_path / "missing.sqlite"
+    monkeypatch.setattr(jev_module, "LEDGER", path)
+    monkeypatch.setattr("sys.argv", ["jev", "--audit-budget"])
+    with pytest.raises(SystemExit) as error:
+        jev_module.main()
+    assert error.value.code == 1
+    assert "cannot be audited" in capsys.readouterr().err
+    assert not path.exists()

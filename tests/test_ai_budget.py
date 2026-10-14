@@ -79,3 +79,35 @@ def test_invalid_or_excess_settlement_keeps_reservation(tmp_path: Path) -> None:
         with pytest.raises(BudgetError):
             budget.settle(call, cost, model="jev-1.13.0", input_tokens=1)
     assert budget.snapshot(now=NOW)["used_nano_usd"] == 100
+
+
+def test_unresolved_audit_includes_old_month_without_mutating_ledger(tmp_path: Path) -> None:
+    path = tmp_path / "budget.sqlite"
+    Budget.initialize(path)
+    budget = Budget(path)
+    september = budget.reserve("typesafe", 3_000_000, now=NOW)
+    paid = budget.reserve("typesafe", 3_000_000, now=NOW)
+    budget.settle(paid, 4200, model="jev-1.13.0", input_tokens=100)
+    october = budget.reserve("other-provider", 100, now=datetime(2026, 10, 1, tzinfo=UTC))
+    before = path.read_bytes()
+    assert Budget(path).unresolved() == [
+        {"reservation_id": september, "month": "2026-09", "provider": "typesafe",
+         "reserved_nano_usd": 3_000_000, "accounted_nano_usd": 3_000_000},
+        {"reservation_id": october, "month": "2026-10", "provider": "other-provider",
+         "reserved_nano_usd": 100, "accounted_nano_usd": 100},
+    ]
+    assert path.read_bytes() == before
+    assert budget.snapshot(now=NOW) == {"used_nano_usd": 3_004_200, "pending_calls": 1}
+
+
+def test_unresolved_audit_empty_missing_and_corrupt_ledger(tmp_path: Path) -> None:
+    path = tmp_path / "budget.sqlite"
+    with pytest.raises(BudgetError, match="cannot be audited"):
+        Budget(path).unresolved()
+    assert not path.exists()
+    Budget.initialize(path)
+    assert Budget(path).unresolved() == []
+    path.write_bytes(b"not a sqlite database")
+    with pytest.raises(BudgetError, match="cannot be audited"):
+        Budget(path).unresolved()
+    assert path.read_bytes() == b"not a sqlite database"

@@ -73,6 +73,7 @@ def main() -> None:
                 "policy_state"
             ]["response_store"],
             MarketContext.from_csv(directory / "daily.csv") if args.with_context else None,
+            bars=load_candles(directory / "candles.csv"),
         )
         windows.append(
             {

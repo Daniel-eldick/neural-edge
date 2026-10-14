@@ -106,3 +106,27 @@ class Budget:
         except sqlite3.Error:
             raise BudgetError("AI budget ledger cannot be read") from None
         return {"used_nano_usd": int(row[0]), "pending_calls": int(row[1])}
+
+    def unresolved(self) -> list[dict[str, str | int]]:
+        """Read all months' unresolved reservations, never settle or create a ledger.
+
+        These local IDs are not provider request IDs. Retained amounts are accounting
+        bounds, not confirmed bills; provider evidence is required to reconcile them.
+        """
+        try:
+            with closing(sqlite3.connect(
+                self.path.as_uri() + "?mode=ro", uri=True, timeout=5,
+            )) as connection:
+                rows = connection.execute(
+                    "SELECT id, month, provider, reserved, cost FROM charges "
+                    "WHERE settled = 0 ORDER BY month, id"
+                ).fetchall()
+        except sqlite3.Error:
+            raise BudgetError(
+                "AI budget ledger cannot be audited; existing data preserved"
+            ) from None
+        return [
+            {"reservation_id": str(row[0]), "month": str(row[1]), "provider": str(row[2]),
+             "reserved_nano_usd": int(row[3]), "accounted_nano_usd": int(row[4])}
+            for row in rows
+        ]

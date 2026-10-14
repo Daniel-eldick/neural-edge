@@ -379,6 +379,43 @@ Source links support platform context. They do not establish that the apprentice
 
 ## Progress log
 
+### 2026-10-15: research-readiness review and bounded repairs — complete; next experiment blocked
+
+Daniel authorized Codex agents to investigate blocked requests, prepare the next controlled
+experiment and review the cumulative draft. Three parallel scopes: budget/recovery inspection,
+evaluation design, and independent replay/evidence audit. This increment makes no paid request,
+reruns no consumed experiment, and changes no trading permission or risk limit.
+
+Tasks and acceptance:
+1. Add a read-only all-month unresolved-reservation audit. Preserve original ledger bytes;
+   report retained previous-month charges without requiring credentials or network access.
+2. Harden paired evidence validation: require matching execution source and verify saved
+   request model, options, instructions and exact causal candle prefix against the dataset.
+   Regressions must demonstrate rejection of mismatched synthetic evidence.
+3. Specify the next prompt/context-controlled experiment with explicit implementation and
+   evidence prerequisites. Keep it blocked until those prerequisites are satisfied.
+4. Run lint, typing, Python and existing JavaScript tests; publish reviewable feature changes.
+
+Files: src/agents/{budget,jev}.py, src/evaluation/, focused tests, README, research and review
+notes. Read-only audit does not settle charges, clear response-store failure gates, or authorize
+new calls. Evaluation changes may reject mismatched evidence but never rewrite source journals.
+Rollback is a code revert; original financial/research state remains authoritative.
+
+Historical failure diagnosis: the stored error identifies a connection exception, not its exact
+network cause or provider billing outcome. The reported September USD .003 reservation remains
+uncertain; this checkout does not include the private ledger, response stores or source journals.
+Do not create a replacement ledger to bypass missing authoritative state. Actual reconciliation
+must occur on the original host with provider evidence. The per-run durable failure gate was
+already fixed September 30; it is not a global all-ledger request lock.
+
+Verification: Ruff passed; strict mypy passed across 68 files using the documented container
+runtime workaround; 257 Python tests passed, 17 existing sensory xfails unchanged; six JS tests
+passed. Four obsolete TA-Lib type suppressions were removed without indicator changes.
+See [review and verification](../reviews/2026-10-15_RESEARCH_READINESS.md) and
+[next controlled study design](../research/CONTROLLED_CONTEXT_SCREEN_V2.md).
+The next study's matched arms remain unimplemented; no paid experiment was started.
+
+
 
 ### 2026-10-01: automatically updating cockpit — Full tier / local verification complete; online connection pending (5/6, 83% of this increment)
 
