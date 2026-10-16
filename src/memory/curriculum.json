@@ -1,0 +1,12 @@
+{
+  "version": "foundations-v0.1",
+  "available_at": 1790726400,
+  "cards": [
+    {"lesson_id": "L1", "source_ids": ["S1"], "claim": "An order must satisfy dated venue price, quantity and notional rules. A simulated fill does not prove exchange acceptance. Never round up through a risk limit."},
+    {"lesson_id": "L2", "source_ids": ["S2"], "claim": "A correct price direction can still lose after fees and adverse slippage. Trading results and AI operating costs are separate. Candles do not reveal the full execution path."},
+    {"lesson_id": "L3", "source_ids": ["S3"], "claim": "Account risk depends on stop distance and costs, not just position value. Independent code owns the 0.5% per-trade and 2.5% aggregate caps. Gaps can exceed planned losses."},
+    {"lesson_id": "L4", "source_ids": ["S4"], "claim": "Use only closed candles and reviewed outcomes available at the decision time. A close-derived decision cannot fill before the next candle opens. Never infer future outcomes from dates."},
+    {"lesson_id": "L5", "source_ids": [], "claim": "The fixed prior-20-bar breakout is a testable hypothesis, not a profitable fact. WAIT is permitted. Classification confidence is not a calibrated probability of profit."},
+    {"lesson_id": "L6", "source_ids": ["S5"], "claim": "Retain losing and winning examples. A small or selected sample cannot justify a rule. Compare a frozen candidate against controls on untouched periods; teacher approval cannot promote it."}
+  ]
+}
