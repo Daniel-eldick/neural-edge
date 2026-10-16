@@ -1,0 +1,4 @@
+# Standalone hosted transport; do not install the repository's legacy trading dependencies.
+requests==2.33.1
+python-dotenv==1.2.2
+cryptography==46.0.6
