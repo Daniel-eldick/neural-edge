@@ -1,0 +1,51 @@
+name: Frozen Jev lesson week
+on:
+  schedule:
+    - cron: '30 6 25 10 *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Verify encrypted snapshot only, or execute the one frozen future run
+        required: true
+        default: verify
+        type: choice
+        options: [verify, run]
+permissions: {}
+concurrency:
+  group: frozen-jev-lesson-week-v2
+  cancel-in-progress: false
+jobs:
+  research:
+    if: github.repository == 'Daniel-eldick/neural-edge' && github.ref == 'refs/heads/develop' && github.actor == 'Daniel-eldick'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    environment: jev-lesson-week
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Check out the hosted controller
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Set up the pinned Python runtime
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12.13'
+      - name: Install only the research transport dependencies
+        run: python -m pip install --disable-pip-version-check -r deploy/research/runtime.txt
+      - name: Verify or run the encrypted frozen experiment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JEV_RESEARCH_ENVELOPE_KEY: ${{ secrets.JEV_RESEARCH_ENVELOPE_KEY }}
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+          REQUESTED_MODE: ${{ inputs.mode || 'run' }}
+        run: python -m deploy.research.cloud "$REQUESTED_MODE" --directory deploy/research/frozen-week
+      - name: Stop future scheduled attempts after the execution date
+        if: always() && (github.event_name == 'schedule' || inputs.mode == 'run')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(date -u +%s)" -ge 1792909800 ]; then
+            gh api --method PUT repos/Daniel-eldick/neural-edge/actions/workflows/jev-lesson-week.yml/disable
+          fi
