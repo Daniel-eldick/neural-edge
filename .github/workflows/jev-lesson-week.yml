@@ -49,3 +49,38 @@ jobs:
           if [ "$(date -u +%s)" -ge 1792909800 ]; then
             gh api --method PUT repos/Daniel-eldick/neural-edge/actions/workflows/jev-lesson-week.yml/disable
           fi
+  completion:
+    needs: research
+    if: always() && github.repository == 'Daniel-eldick/neural-edge' && github.ref == 'refs/heads/develop' && github.actor == 'Daniel-eldick' && needs.research.result != 'skipped' && (github.event_name == 'schedule' || inputs.mode == 'run')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Notify the owner without publishing private results
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESEARCH_STATUS: ${{ needs.research.result }}
+          RESEARCH_RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$(date -u +%s)" -lt 1792909800 ]; then
+            exit 0
+          fi
+          case "$RESEARCH_STATUS" in
+            success|failure|cancelled) ;;
+            *) exit 1 ;;
+          esac
+          case "$RESEARCH_RUN_ID" in
+            ''|*[!0-9]*) exit 1 ;;
+          esac
+          notice=$(printf '%s\n' \
+            '@Daniel-eldick The scheduled research execution attempt has finished.' \
+            "Research job status: $RESEARCH_STATUS." \
+            "Run: https://github.com/Daniel-eldick/neural-edge/actions/runs/$RESEARCH_RUN_ID" \
+            '' \
+            'Results remain encrypted. The private trade comparison and cost summary will appear in the existing Codex conversation when the original computer and app can collect the result.' \
+            'A failure or cancellation may leave the result unavailable; the existing budget hold remains until private accounting is verified. No paid retry is triggered by this notice.')
+          gh api --method POST repos/Daniel-eldick/neural-edge/issues/6/comments \
+            -f body="$notice" --jq .html_url

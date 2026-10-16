@@ -29,6 +29,19 @@ Results, journals and execution accounting are encrypted and committed to the de
 `research/lesson-week-v2-cloud-claimed` branch. No Actions artifacts/cache/Packages are used.
 The scheduled workflow disables itself after its terminal execution attempt.
 
+An isolated completion job mentions the owner in
+[the completion issue](https://github.com/Daniel-eldick/neural-edge/issues/6) after the
+execution attempt, including failure/cancellation. It has only issues-write permission,
+no checkout or research secrets, and publishes only status and a run link. Verification,
+early and skipped runs do not post. GitHub email/mobile delivery follows the owner's
+notification settings. This alert can run while the operator computer is off.
+
+The existing local collector checks October 25–31 for the encrypted outcome, then stops
+after a terminal summary or the final check. It reports completed trades, cost-adjusted
+returns and actual inference costs separately from held funds. It cannot rerun the test.
+The private summary requires the original computer/app and key; delayed/missing results
+preserve the budget hold. No additional model spend or paid hosting is introduced.
+
 On the original operator computer, download the encrypted `result.enc` from that branch into
 the ignored `user_data/research/lesson-week-cloud-v2-approved/` directory. Then, from the original local
 research checkout:
