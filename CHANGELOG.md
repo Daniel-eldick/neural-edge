@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-20 — Apprentice trader documentation handoff
+
+- Added one reference plan containing user decisions, static repository findings, proposed architecture, milestones and acceptance tests.
+- Replaced stale project entry points with current guidance; preserved the unfinished April setup plan and previous Claude instructions in docs/archive/.
+- No runtime source, tests, configuration, dependencies, hooks or deployment changed. No trading or implementation started.
+- Entries below describe inherited framework history, not apprentice implementation progress.
+
 All notable changes to the simplrr-framework will be documented in this file.
 
 ## [1.1.0] — 2026-04-04

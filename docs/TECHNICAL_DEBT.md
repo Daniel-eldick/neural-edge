@@ -1,5 +1,7 @@
 # Technical Debt & Scalability Concerns
 
+> Current review: see [the apprentice trader plan](active/APPRENTICE_TRADER_PLAN.md), section 3, for risk-integration and implementation gaps. The cache note below is preserved from April; its severity totals are historical, not a current readiness assessment.
+
 **Purpose**: Systematic tracking of code that works now but will fail at scale
 **Mandate**: "Build the perfect system that will never fail"
 **Review Frequency**: Before every major feature and monthly
