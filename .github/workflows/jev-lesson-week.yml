@@ -75,8 +75,54 @@ jobs:
           JEV_RESEARCH_REPORT_DEPLOY_KEY: ${{ secrets.JEV_RESEARCH_REPORT_DEPLOY_KEY }}
           REQUESTED_MODE: ${{ inputs.mode || 'run' }}
         run: python -m deploy.research.summary "$REQUESTED_MODE" --directory deploy/research/frozen-week
-  completion:
+  learning:
     needs: [research, private_summary]
+    if: always() && github.repository == 'Daniel-eldick/neural-edge' && github.ref == 'refs/heads/develop' && github.actor == 'Daniel-eldick' && needs.research.result != 'skipped'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: jev-lesson-week
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the isolated learning controller
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Set up the pinned Python runtime
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12.13'
+      - name: Install only the research transport dependencies
+        run: python -m pip install --disable-pip-version-check -r deploy/research/runtime.txt
+      - name: Restore learning funding from protected secrets
+        env:
+          JEV_LEARNING_BUNDLE_1: ${{ secrets.JEV_LEARNING_BUNDLE_1 }}
+          JEV_LEARNING_BUNDLE_2: ${{ secrets.JEV_LEARNING_BUNDLE_2 }}
+        run: |
+          python - <<'PY'
+          import base64, hashlib, json, os
+          from pathlib import Path
+          directory = Path('deploy/research/learning-week')
+          config = json.loads((directory / 'runner.json').read_text())
+          sealed = base64.b64decode(os.environ['JEV_LEARNING_BUNDLE_1'] + os.environ['JEV_LEARNING_BUNDLE_2'], validate=True)
+          if len(sealed) > 128000 or sealed[:4] != b'JEV1' or hashlib.sha256(sealed).hexdigest() != config['input_sha256']:
+              raise SystemExit('Private learning funding binding differs; no request allowed')
+          target = directory / 'input.enc'
+          with target.open('xb') as output:
+              target.chmod(0o600)
+              output.write(sealed)
+          print('Private learning funding restored without public export')
+          PY
+      - name: Review completed evidence and save an unproven candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JEV_RESEARCH_ENVELOPE_KEY: ${{ secrets.JEV_RESEARCH_ENVELOPE_KEY }}
+          JEV_RESEARCH_REPORT_DEPLOY_KEY: ${{ secrets.JEV_RESEARCH_REPORT_DEPLOY_KEY }}
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+          REQUESTED_MODE: ${{ inputs.mode || 'run' }}
+        run: python -m deploy.research.learning "$REQUESTED_MODE" --directory deploy/research/frozen-week --funding deploy/research/learning-week
+  completion:
+    needs: [research, private_summary, learning]
     if: always() && github.repository == 'Daniel-eldick/neural-edge' && github.ref == 'refs/heads/develop' && github.actor == 'Daniel-eldick' && needs.research.result != 'skipped' && (github.event_name == 'schedule' || inputs.mode == 'run')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -88,6 +134,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RESEARCH_STATUS: ${{ needs.research.result }}
           SUMMARY_STATUS: ${{ needs.private_summary.result }}
+          LEARNING_STATUS: ${{ needs.learning.result }}
           RESEARCH_RUN_ID: ${{ github.run_id }}
         shell: bash
         run: |
@@ -103,6 +150,10 @@ jobs:
             success|failure|cancelled|skipped) ;;
             *) exit 1 ;;
           esac
+          case "$LEARNING_STATUS" in
+            success|failure|cancelled|skipped) ;;
+            *) exit 1 ;;
+          esac
           case "$RESEARCH_RUN_ID" in
             ''|*[!0-9]*) exit 1 ;;
           esac
@@ -112,7 +163,9 @@ jobs:
             "Run: https://github.com/Daniel-eldick/neural-edge/actions/runs/$RESEARCH_RUN_ID" \
             '' \
             "Private report delivery job: $SUMMARY_STATUS." \
+            "Candidate lesson review job: $LEARNING_STATUS." \
             'Private report: https://github.com/Daniel-eldick/jev-research-results/blob/reports/README.md (sign in as the owner).' \
+            'Private candidate lessons: https://github.com/Daniel-eldick/jev-research-results/tree/reports/lessons (unproven, never automatically promoted).' \
             'The report may be inconclusive or unavailable after a failed execution or delivery. Detailed results are never posted in this public notice.' \
             'A failure or cancellation may leave the result unavailable; the existing budget hold remains until private accounting is verified. No paid retry is triggered by this notice.')
           gh api --method POST repos/Daniel-eldick/neural-edge/issues/6/comments \

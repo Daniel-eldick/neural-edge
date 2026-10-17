@@ -59,6 +59,39 @@ reconciling the original host ledger when the computer/app is available. The clo
 cannot reconcile that ledger, release a hold or rerun the test. Frozen snapshot headroom
 is explicitly not a live global balance. Delayed/missing results preserve the full hold.
 
+## One automatic post-test review
+
+A separate `learning` job performs at most one pinned Jev review after this frozen test.
+It uses a separate USD 0.003 hold funded through the original USD 3 monthly guard; the
+existing USD 0.504 replay allocation and frozen input are unchanged. Its encrypted budget
+copy preserves all prior records. An atomic learning claim prevents duplicate paid draws;
+the copy allows exactly one USD 0.003 reservation, only in October before pricing expiry.
+
+The job authenticates the original encrypted outcome before reviewing it. Fewer than ten
+completed trades in either AI variant, failed evidence or no outcome means an inconclusive
+record without a model call. With sufficient completed coverage, Jev selects a fixed
+retain/revise/set-aside/inconclusive research stance. Numeric findings, actual receipt,
+parent lesson identity, training cutoff and real availability time enter immutable private
+`lessons/lesson-week-v2-review-v1.json` and `.md` files. No model weights, original lessons,
+frozen test, trading policies or risk rules change. Improvement requires later unseen data.
+
+The funded input bundle stays in two protected environment secrets, never the public repo;
+each encoded part is below GitHub's per-secret size limit. The runner reconstructs it only
+after verifying the public expected hash, then the controller authenticates its encryption,
+source and original allocation. No funding or lesson text is printed in logs.
+
+Learning input/results use separate authenticated encryption domains. The receipt, model
+response store and execution ledger are encrypted in an immutable private receipt file;
+the public learning claim contains only the already-public source revision, no learning data.
+No private lesson text or cost is printed publicly. The original host hold stays until
+authenticated local collection; uncertainty retains the full USD 0.003 learning hold.
+A later candidate-push failure leaves its already-committed encrypted receipt collectible.
+If the initial receipt push fails, runner cleanup can lose the only evidence copy. The claim
+and full USD 0.003 hold then remain pending manual accounting; no automatic paid retry or
+refund is allowed. A generic workflow failure is still reported.
+Verification only checks its funded envelope and writes `learning-connection-check.md`,
+with no model construction, claim, market request or lesson generation.
+
 On the original operator computer, download the encrypted `result.enc` from that branch into
 the ignored `user_data/research/lesson-week-cloud-v2-approved/` directory. Then, from the original local
 research checkout:
@@ -72,3 +105,14 @@ imports authenticated failure evidence even if provider usage remains uncertain;
 case the full original hold stays pending. It never calls the provider or reruns the replay.
 The public repository's legacy source is not the frozen research runtime: the controller
 restores that exact runtime from the authenticated encrypted snapshot before importing it.
+
+For learning collection, read the private report repository's
+`learning-receipts/lesson-week-v2-review-v1.enc.base64` on `reports`, base64-decode to the
+ignored `user_data/research/lesson-week-learning-v1/learning.enc`, then run:
+
+```bash
+.venv/bin/python -m deploy.research.learning collect --directory user_data/research/lesson-week-cloud-v2-approved --funding user_data/research/lesson-week-learning-v1
+```
+
+This verifies original study evidence, rebuilds the saved candidate using cached responses,
+and reconciles only the separate learning hold. Missing or uncertain proof retains it.
