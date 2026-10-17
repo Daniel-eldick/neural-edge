@@ -226,7 +226,7 @@ def publish(text: str, private_key: str, *, check: bool = False) -> None:
         raise ValueError("Report exceeds bound")
     assert_private()
     with tempfile.TemporaryDirectory(prefix="jev-report-") as temporary:
-        root = Path(temporary)
+        root = Path(temporary).resolve()
         key, hosts = root / "key", root / "known_hosts"
         key.write_text(private_key)
         key.chmod(0o600)
@@ -305,21 +305,25 @@ def main() -> None:
     parser.add_argument("mode", choices=["verify", "run"])
     parser.add_argument("--directory", type=Path, required=True)
     args = parser.parse_args()
+    stage = "configuration"
     try:
         from datetime import UTC, datetime
 
         key = base64.b64decode(os.environ["JEV_RESEARCH_ENVELOPE_KEY"], validate=True)
         deploy_key = os.environ["JEV_RESEARCH_REPORT_DEPLOY_KEY"]
         with tempfile.TemporaryDirectory(prefix="jev-summary-") as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
+            stage = "restore"
             metadata = restore(
                 args.directory / "runner.json", args.directory / "input.enc", key, root / "input"
             )
             if args.mode == "verify" or datetime.now(UTC).timestamp() < READY:
+                stage = "private_delivery"
                 publish(CHECK_TEXT, deploy_key, check=True)
                 print('{"status":"private_delivery_verified_waiting_for_data"}')
                 return
             sys.path.insert(0, str(root / "input"))
+            stage = "outcome_authentication"
             result_path = root / "result.enc"
             report, usage, settled = None, None, None
             if download_result(result_path):
@@ -332,12 +336,15 @@ def main() -> None:
                     root / "outcome",
                 )
             text = render(report, metadata, usage, settled, os.environ["GITHUB_RUN_ID"])
+            stage = "private_delivery"
             publish(text, deploy_key)
             print('{"status":"private_summary_saved"}')
     except Exception:
         # Never let requests/subprocess exception output reveal private content or credentials.
         parser.exit(
-            1, "Private summary unavailable; preserve encrypted evidence and original hold.\n"
+            1,
+            f"Private summary unavailable (stage={stage}); "
+            "preserve encrypted evidence and original hold.\n",
         )
 
 
