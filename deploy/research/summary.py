@@ -228,7 +228,7 @@ def publish(text: str, private_key: str, *, check: bool = False) -> None:
     with tempfile.TemporaryDirectory(prefix="jev-report-") as temporary:
         root = Path(temporary).resolve()
         key, hosts = root / "key", root / "known_hosts"
-        key.write_text(private_key)
+        key.write_text(private_key.strip() + "\n")
         key.chmod(0o600)
         hosts.write_text(HOST_KEY)
         ssh = (
@@ -339,6 +339,24 @@ def main() -> None:
             stage = "private_delivery"
             publish(text, deploy_key)
             print('{"status":"private_summary_saved"}')
+    except subprocess.CalledProcessError as error:
+        commands = {
+            "init",
+            "fetch",
+            "read-tree",
+            "hash-object",
+            "update-index",
+            "write-tree",
+            "rev-parse",
+            "commit-tree",
+            "push",
+        }
+        failed = next((part for part in error.cmd if part in commands), "unknown")
+        parser.exit(
+            1,
+            f"Private summary unavailable (stage=git_{failed}, code={error.returncode}); "
+            "preserve encrypted evidence and original hold.\n",
+        )
     except Exception:
         # Never let requests/subprocess exception output reveal private content or credentials.
         parser.exit(
