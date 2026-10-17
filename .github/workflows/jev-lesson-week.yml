@@ -49,8 +49,34 @@ jobs:
           if [ "$(date -u +%s)" -ge 1792909800 ]; then
             gh api --method PUT repos/Daniel-eldick/neural-edge/actions/workflows/jev-lesson-week.yml/disable
           fi
-  completion:
+  private_summary:
     needs: research
+    if: always() && github.repository == 'Daniel-eldick/neural-edge' && github.ref == 'refs/heads/develop' && github.actor == 'Daniel-eldick' && needs.research.result != 'skipped'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: jev-lesson-week
+    permissions:
+      contents: read
+    steps:
+      - name: Check out only the summary controller
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Set up the pinned Python runtime
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12.13'
+      - name: Install only the research transport dependencies
+        run: python -m pip install --disable-pip-version-check -r deploy/research/runtime.txt
+      - name: Generate and deliver the private summary without inference
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JEV_RESEARCH_ENVELOPE_KEY: ${{ secrets.JEV_RESEARCH_ENVELOPE_KEY }}
+          JEV_RESEARCH_REPORT_DEPLOY_KEY: ${{ secrets.JEV_RESEARCH_REPORT_DEPLOY_KEY }}
+          REQUESTED_MODE: ${{ inputs.mode || 'run' }}
+        run: python -m deploy.research.summary "$REQUESTED_MODE" --directory deploy/research/frozen-week
+  completion:
+    needs: [research, private_summary]
     if: always() && github.repository == 'Daniel-eldick/neural-edge' && github.ref == 'refs/heads/develop' && github.actor == 'Daniel-eldick' && needs.research.result != 'skipped' && (github.event_name == 'schedule' || inputs.mode == 'run')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -61,6 +87,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RESEARCH_STATUS: ${{ needs.research.result }}
+          SUMMARY_STATUS: ${{ needs.private_summary.result }}
           RESEARCH_RUN_ID: ${{ github.run_id }}
         shell: bash
         run: |
@@ -72,6 +99,10 @@ jobs:
             success|failure|cancelled) ;;
             *) exit 1 ;;
           esac
+          case "$SUMMARY_STATUS" in
+            success|failure|cancelled|skipped) ;;
+            *) exit 1 ;;
+          esac
           case "$RESEARCH_RUN_ID" in
             ''|*[!0-9]*) exit 1 ;;
           esac
@@ -80,7 +111,9 @@ jobs:
             "Research job status: $RESEARCH_STATUS." \
             "Run: https://github.com/Daniel-eldick/neural-edge/actions/runs/$RESEARCH_RUN_ID" \
             '' \
-            'Results remain encrypted. The private trade comparison and cost summary will appear in the existing Codex conversation when the original computer and app can collect the result.' \
+            "Private report delivery job: $SUMMARY_STATUS." \
+            'Private report: https://github.com/Daniel-eldick/jev-research-results/blob/reports/README.md (sign in as the owner).' \
+            'The report may be inconclusive or unavailable after a failed execution or delivery. Detailed results are never posted in this public notice.' \
             'A failure or cancellation may leave the result unavailable; the existing budget hold remains until private accounting is verified. No paid retry is triggered by this notice.')
           gh api --method POST repos/Daniel-eldick/neural-edge/issues/6/comments \
             -f body="$notice" --jq .html_url
