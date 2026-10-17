@@ -220,9 +220,29 @@ def assert_private() -> None:
             raise ValueError("Private destination unavailable or public")
 
 
-def publish(text: str, private_key: str, *, check: bool = False) -> None:
+def publish(
+    text: str,
+    private_key: str,
+    *,
+    check: bool = False,
+    artifacts: dict[str, str] | None = None,
+) -> None:
     """Git plumbing avoids checkout/hooks, forced updates, and private output in logs."""
-    if len(text.encode()) > 64_000:
+    if artifacts is None:
+        files = {"connection-check.md" if check else "README.md": text}
+    else:
+        allowed = {
+            "lessons/lesson-week-v2-review-v1.json",
+            "lessons/lesson-week-v2-review-v1.md",
+            "learning-connection-check.md",
+            "learning-receipts/lesson-week-v2-review-v1.enc.base64",
+        }
+        if text or check or not artifacts or not set(artifacts) <= allowed:
+            raise ValueError("Unapproved private learning artifact path")
+        files = artifacts
+    receipt = "learning-receipts/lesson-week-v2-review-v1.enc.base64"
+    normal_size = sum(len(value.encode()) for name, value in files.items() if name != receipt)
+    if normal_size > 64_000 or len(files.get(receipt, "").encode()) > 128_000:
         raise ValueError("Report exceeds bound")
     assert_private()
     with tempfile.TemporaryDirectory(prefix="jev-report-") as temporary:
@@ -266,9 +286,13 @@ def publish(text: str, private_key: str, *, check: bool = False) -> None:
         git("fetch", "--depth=1", "origin", "reports")
         parent = git("rev-parse", "FETCH_HEAD")
         git("read-tree", parent)
-        blob = git("hash-object", "-w", "--stdin", data=text)
-        target = "connection-check.md" if check else "README.md"
-        git("update-index", "--add", "--cacheinfo", "100644", blob, target)
+        for target, value in sorted(files.items()):
+            blob = git("hash-object", "-w", "--stdin", data=value)
+            if target.startswith(("lessons/", "learning-receipts/")):
+                existing = git("ls-tree", parent, "--", target)
+                if existing and existing.split()[2] != blob:
+                    raise ValueError("Existing private lesson version is immutable")
+            git("update-index", "--add", "--cacheinfo", "100644", blob, target)
         tree = git("write-tree")
         if tree == git("rev-parse", f"{parent}^{{tree}}"):
             return
