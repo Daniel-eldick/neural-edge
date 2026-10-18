@@ -156,3 +156,46 @@ sequences and the complete report must match; it never invokes the provider. Onl
 follow-up hold is reconciled, idempotently; uncertain usage retains it. A changed scientific
 checkout blocks collection rather than reinterpret evidence. Hosted execution/reporting
 works with the computer off; local import/reconciliation requires its original files.
+
+## Automatic adoption for future research
+
+An unpaid `selection` job now follows the fresh comparison. It restores the same verified
+runtime and funded input, authenticates private results, then reproduces all replay journals
+from cached responses. It never constructs a provider client or alters/reconciles a budget.
+The pinned rule in `promotion-rule/runner.json` was declared before the fresh entry window.
+
+A candidate must have at least10completed trades in every Jev arm, positive net trading
+profit, return at least0.10percentage points above original/frozen/baseline, and maximum
+drawdown no worse than original/frozen and strictly below10%. Evidence must be complete,
+without policy errors/open positions/unknown usage, and receipts must match within the
+existing USD0.432 allocation. Otherwise the original lesson stays selected. This is
+provisional research adoption, not evidence of repeatability or a real-trading permission.
+
+`lesson-selection/decision-v1.enc.base64` and its private README record the verdict.
+Only approval creates `lesson-selection/active.enc.base64`, atomically in the same commit.
+A missing/corrupt result never enables a candidate. Existing versions cannot be overwritten.
+The job has no TypeSafe token; adds no paid requests, escrow, secret, hosting or schedule.
+A private connection check is the only verify-mode output. The completion notice links to
+the private decision and reveals no metrics/lesson text. The original frozen experiments
+continue their explicit fixed policies and original promotion_allowed=false contracts.
+
+Future authorized research runs create their default policy with
+`deploy.research.research_policy.make_research_policy(parent, store, recorder, api_key=...,
+budget=..., key=..., now=..., max_attempts=...)`, after restoring the original research
+runtime. `parent` must match the full pinned original LessonPack; the selector is read once,
+verified and passed to unchanged LessonPolicy/JevClient. Every actual request still requires
+the persistent monthly guard and the supplied per-run attempt limit. This increment starts
+no new paid decisions or worker. Model weights/risk/exit rules are unchanged.
+
+The exact tested payload is retained. Its training cutoff includes the validation period;
+effective availability is at least the real private-selector retrieval completion. Earlier
+observations fail before a model request. This conservative boundary applies even to a newly
+created replay of dates after approval but before retrieval: freeze a new future window.
+The encrypted `policy.selection_snapshot` is saved once in the private journal; checkpoints
+carry only its SHA. For resume, pass that same persisted `selection_snapshot` to the factory.
+It authenticates the snapshot, does not reread/switch current selection and preserves its
+checkpoint identity. Missing selection uses original; invalid selection refuses.
+
+Rollback requires explicitly removing the active pointer, preserving decision history and
+original context. Disabling the selection job prevents new adoption. This is a single
+candidate/version; a different validation/rule requires a separately authorized version.
