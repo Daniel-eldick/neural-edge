@@ -116,3 +116,43 @@ ignored `user_data/research/lesson-week-learning-v1/learning.enc`, then run:
 
 This verifies original study evidence, rebuilds the saved candidate using cached responses,
 and reconciles only the separate learning hold. Missing or uncertain proof retains it.
+
+## One fresh comparison after the saved candidate
+
+The separate `jev-fresh-lessons.yml` workflow runs once October31 2026 at06:30UTC
+(08:30 Beirut), with entry data fixed to October26–29 and protective exits through
+October31 00:00UTC. The original workflow has an unpaid `freeze_fresh` job after learning:
+it authenticates the saved private candidate and both original receipts, reconstructs the
+review using cached responses and seals its exact identity before any fresh entry data.
+A real-time deadline check and a conservative ten-minute buffer precede publication;
+consumption checks private artifact commit time too. Missing, late or inconclusive context
+cannot trigger paid replay; dates never shift after seeing outcomes.
+
+The additional USD0.432 hold in the same original USD3 October guard covers at most144
+requests:48 per frozen/original/candidate AI arm. Sampled baseline is deterministic and
+cash return is zero. All use independent accounts and unchanged governor/execution settings;
+one breakout per symbol per six-hour slot, with no replacement for portfolio/halt skips.
+No new weights, policy promotion or recursive learning follows this test. The new encrypted
+funding is in protected `JEV_FRESH_BUNDLE_1/2` secrets; public runner metadata has hashes only.
+Original cloud/guard/learning/publisher source, input, lessons and allocations stay fixed.
+
+Results, summary, candidate freeze and receipts remain in the approved private repo under
+`fresh-replay/`. Owner gets only a generic public status/link notice. A private first-push
+failure may lose ephemeral evidence: the full original hold remains pending manual accounting,
+with no paid retry/refund. Git transport is time-bounded and depth64 but has no disk cap;
+missing private history conservatively blocks the test. These limitations preserve accounting.
+Verification writes only `fresh-replay/connection-check.md`, with no market, inference or claim.
+
+The operator may privately download `fresh-replay/result.enc.base64` from branch `reports`,
+decode into ignored `user_data/research/lesson-fresh-v1/result.enc`, and run:
+
+```bash
+.venv/bin/python -m deploy.research.followup collect --directory user_data/research/lesson-week-cloud-v2-approved --funding user_data/research/lesson-fresh-v1
+```
+
+Collection verifies original scientific source identity, authenticates its allocation and
+rebuilds the entire replay with cached responses into temporary journals. Ordered event
+sequences and the complete report must match; it never invokes the provider. Only this
+follow-up hold is reconciled, idempotently; uncertain usage retains it. A changed scientific
+checkout blocks collection rather than reinterpret evidence. Hosted execution/reporting
+works with the computer off; local import/reconciliation requires its original files.
