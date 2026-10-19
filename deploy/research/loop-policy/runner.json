@@ -1,0 +1,29 @@
+{
+  "authority": "7902d5cd590c4697949ca78df5070adc",
+  "declared_at": 1792397543,
+  "first_review": 1793577600,
+  "monthly_cap_nano_usd": 3000000000,
+  "rule": {
+    "controls": [
+      "original",
+      "frozen",
+      "baseline"
+    ],
+    "drawdown_not_worse_than": [
+      "original",
+      "frozen"
+    ],
+    "maximum_drawdown_exclusive": 0.1,
+    "maximum_verified_inference_nano_usd": 432000000,
+    "minimum_closed_per_ai_variant": 10,
+    "minimum_return_margin": 0.001,
+    "new_paid_calls": 0,
+    "positive_net_trading_profit": true,
+    "require_complete_verified_replay": true,
+    "scope": "future_bounded_research_context_only",
+    "uncertain_usage_allowed": false,
+    "version": "fresh-adoption-v1"
+  },
+  "schema": 1,
+  "source_sha256": "48c7d5517565b1a4c41704e779ad526b39348af9632141107917d208d6788ac5"
+}
