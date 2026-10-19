@@ -199,3 +199,66 @@ checkpoint identity. Missing selection uses original; invalid selection refuses.
 Rollback requires explicitly removing the active pointer, preserving decision history and
 original context. Disabling the selection job prevents new adoption. This is a single
 candidate/version; a different validation/rule requires a separately authorized version.
+
+## Recurring learning on fresh data (authorized October19)
+
+`jev-recurring-research.yml` wakes on GitHub's standard public Linux runner at07:17UTC
+ daily, including when Daniel's computer is off. First review is November2; the first
+new comparison uses November3–6 entries, November7 protective exits, and evaluation
+November8. Thereafter each Monday freezes a candidate before Tuesday's untouched data;
+Sunday tests it. A missed freeze skips that calendar week. Existing October25/31 tests,
+funding, sources and the one-shot selector remain fixed.
+
+Each weekly comparison runs independent baseline, frozen Jev, incumbent and candidate
+accounts. At most48calls per AI arm; at most one teacher call reviewing the last completed
+comparison. Abstention still collects a fresh comparison for later learning and cannot
+promote. A candidate needs the same declared10closed-trade/positive-profit/0.10pp/drawdown/
+verified-cost checks. Whole cached replays must reproduce their ordered journals. A passing
+candidate's exact tested context becomes the next cycle's incumbent; otherwise keep the
+incumbent. The loop's encrypted state is its active selector; the old one-shot factory is
+preserved for its frozen compatibility contract. Model weights and risk/exit rules stay fixed.
+
+The private `reports` branch holds `loop-v1/state.enc.base64`, per-week immutable encrypted
+freezes/results, and `loop-v1/README.md` with completed trades, costs and verdicts. Existing
+restricted write key and AES secret are reused. Generic completion/failure notices link to
+that private summary without exposing findings. No computer-side scheduler is required.
+
+Budget authority is migrated once from the original local SQLite guard. The migration
+transaction preserves the exact original history and seals all further local insertions,
+including future months; existing escrow reconciliation still works. The encrypted remote
+ledger retains every earlier October hold conservatively. It does not reset on a new runner,
+retry, missing file or month. New months get the same USD3 limit by UTC request date. Every
+phase reserves its entire worst case (review USD0.003; test USD0.432) in a successful private
+Git compare-and-swap commit BEFORE any provider call. The runner can then spend only that
+phase, in that real month, with fixed attempts and no unresolved local call. Successful
+verified results settle actual cost atomically with evidence. Uncertain/abandoned phases
+retain the full allocation and never retry; later weeks may use only remaining allowance.
+Missing state, conflict, exhausted allowance, oversized history or uncertain cost never
+creates another allowance. Manual provider-account use outside these guards is not covered.
+
+The separately versioned recurring client checks the official
+[TypeSafe model table](https://docs.typesafe.ai/models) before every paid phase, requiring
+exact `jev-1.13.0`, USD0.042/M input, free output and default64k context. A proof expires
+in15minutes. Changed/unavailable terms block calls; no automatic model/price upgrade.
+The original November1 client expiry remains unchanged. Requests have no retries, redirects
+or long-context header; UTC boundary margins prevent a phase spending in another month.
+This is an application spending guard, not a provider-enforced account billing limit.
+
+A separate key-free upkeep job makes an empty same-tree develop commit after28days without
+commits to prevent GitHub's60-day public-schedule inactivity disabling; it changes no source
+or private data and uses a non-force ref update. Upkeep runs even after a research failure,
+with a generic failure notice if it fails. GitHub schedules can still be delayed or unavailable.
+Private readers deepen shallow history within a fixed bound to authenticate older freezes.
+
+Disable the new workflow to stop future cycles. Preserve remote state and all holds; do not
+unseal/reinitialize the local ledger without an explicit reconciled authority migration.
+Verification mode writes only the private connection check and validates existing state;
+no market/provider request, claim, budget change or lesson selection. Current activation and
+recovery evidence is retained in ignored `user_data/research/loop-v1/`.
+
+The focused tests are `tests/test_research_loop.py`. On a public checkout, first privately
+restore the approved frozen runtime with `cloud.restore` and set `JEV_FROZEN_TEST_RUNTIME`
+to that restored root before running pytest. This preserves the scientific implementation
+hash without publishing its private runtime/data or importing the legacy trading package.
+The local working checkout already contains that identical verified runtime. Test helpers
+are self-contained synthetic data; tests use mocked provider responses and cost USD0.
