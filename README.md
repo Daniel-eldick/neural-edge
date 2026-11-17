@@ -1,6 +1,12 @@
 # NeuralEdge
 
-Multi-layer AI trading bot with autonomous strategy optimization. Paper trading only.
+> **Status: archived on 2026-11-18.** No trading edge was found. Nothing is scheduled
+> and nothing is spending. See the
+> [archive decision](docs/completed/ARCHIVE_DECISION_2026-11-18.md) for the evidence
+> and what would justify reopening.
+
+Experimental multi-layer AI trading bot. Paper trading only. Only Layer 1 (a basic
+strategy and a risk module) was built; the layers above it are stubs.
 
 ## Architecture
 
@@ -62,12 +68,18 @@ mypy .                                    # Type checking
 freqtrade backtesting --strategy AlphaStrategy
 ```
 
-## Key Constraints
+## What exists and what does not
 
-- **Paper trading only** — `dry_run: true` until explicitly authorized
-- **Immutable evaluator** — `src/autoresearch/prepare.py` cannot be modified by the optimization loop
-- **Signal convergence** — Minimum 3 uncorrelated signals required before any trade
-- **Risk limits** — Max 1% per trade, 10% drawdown circuit breaker
+- **Paper trading only** — `dry_run: true`. This was never changed.
+- **Strategy** — `src/strategies/alpha_strategy.py`. Backtested over two years it took
+  14 trades and made nothing (see the archive decision).
+- **Risk module** — `src/core/risk.py` is tested but not connected to the strategy, so
+  its 1% and drawdown limits are not enforced by `config.json`.
+- **Backtester** — `python -m src.backtest.run --data-dir DATA --out OUT`, or the manual
+  `Strategy backtest` workflow. Public data, no keys.
+- **Hosted research loop** — `deploy/research/`. Paused; its engine is not in this repo.
+- **Not built** — sensory signals, the 3-signal convergence gate, the autoresearch
+  evaluator (`src/autoresearch/prepare.py`), swarm and knowledge-graph layers.
 
 ## Tech Stack
 

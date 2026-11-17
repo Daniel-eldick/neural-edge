@@ -1,7 +1,7 @@
-name: Recurring Jev research
+# Paused 2026-11-18: the daily schedule was removed when the project was archived
+# (docs/completed/ARCHIVE_DECISION_2026-11-18.md). Remote state and budget holds are
+# untouched. To resume, restore `schedule: [{cron: "17 7 * * *"}]` under 'on'.
 'on':
-  schedule:
-  - cron: 17 7 * * *
   workflow_dispatch:
     inputs:
       mode:
