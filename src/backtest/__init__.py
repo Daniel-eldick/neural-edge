@@ -1,0 +1,1 @@
+"""Standalone backtester for AlphaStrategy."""
